@@ -31,7 +31,7 @@ export default function RootLayout({
           <div className="flex w-full min-h-screen">
             <AppSidebar />
             <main className="flex-1 overflow-x-hidden bg-white dark:bg-[#09090b]">
-              <div className="p-4 md:p-8">
+              <div>
                 <SidebarTrigger className="md:hidden mb-4" />
                 {children}
               </div>

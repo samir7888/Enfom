@@ -3,8 +3,6 @@ import { BusinessRegistrationForm } from "./components/business-registration-for
 const BusinessRegistration = () => {
     return (
         <div>
-            <h1>Business Registration</h1>
-
             <BusinessRegistrationForm />
         </div>
     )
