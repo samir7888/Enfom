@@ -1,7 +1,7 @@
 
 export default function CapitalDashboard() {
   return (
-    <main className="flex-grow mb-16 md:mb-0 bg-gray-100 overflow-scroll h-screen">
+    <main className="grow mb-16 md:mb-0 bg-gray-100 overflow-scroll h-screen">
       <div className="max-w-[1300px] mx-auto my-8 px-6">
         
         {/* Header */}
@@ -75,7 +75,7 @@ export default function CapitalDashboard() {
                 <div className="my-6">
                   <div className="flex justify-between items-baseline mb-2">
                     <span className="text-xs uppercase tracking-wide font-semibold text-gray-500">Current Score</span>
-                    <span className="text-4xl font-extrabold bg-gradient-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent">690</span>
+                    <span className="text-4xl font-extrabold bg-linear-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent">690</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
                     <div className="h-full bg-indigo-500 rounded-full" style={{ width: "69%" }} />
