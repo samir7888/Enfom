@@ -42,11 +42,11 @@ const sidebarLinks = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" className="border-r border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-all duration-300">
+        <Sidebar collapsible="icon" className="border-r w-full border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-all duration-300">
             <SidebarHeader className="flex items-center justify-center py-6">
                 <div className="flex flex-col items-center gap-1 group-data-[collapsible=icon]:p-0">
-                    <div className="w-9 h-9 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-700">
-                        <LayoutGrid size={18} strokeWidth={2.5} />
+                    <div className="w-12 h-12 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center text-white dark:text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-700">
+                        <LayoutGrid size={24} strokeWidth={2} />
                     </div>
                 </div>
             </SidebarHeader>
@@ -64,7 +64,7 @@ export function AppSidebar() {
                                     >
                                         <Link href={item.url}>
                                             <item.icon
-                                                className={`size-52 ${item.isActive ? 'fill-current' : 'text-zinc-500'}`}
+                                                className={`size-7 ${item.isActive ? 'fill-current' : 'text-zinc-500'}`}
                                                 strokeWidth={item.isActive ? 2 : 1.5}
                                             />
                                         </Link>
