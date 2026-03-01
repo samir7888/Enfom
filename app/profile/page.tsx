@@ -15,6 +15,7 @@ import {
     Settings2,
     ArrowRight
 } from "lucide-react"
+import Link from "next/link"
 
 export default function Profile() {
     return (
@@ -50,14 +51,15 @@ export default function Profile() {
                         <CardContent className="p-0">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {[
-                                    { icon: User, label: "Edit Profile", desc: "Change your public profile info" },
-                                    { icon: Lock, label: "Privacy Settings", desc: "Control your visibility" },
-                                    { icon: Bell, label: "Notification Settings", desc: "Manage your alerts" },
-                                    { icon: Lock, label: "Change Password", desc: "Update your security" },
-                                    { icon: Settings2, label: "Account Management", desc: "Subscription and billing" },
-                                    { icon: UserCog, label: "Switch to Business Account", desc: "Switch to business account" },
+                                    { icon: User, label: "Edit Profile", desc: "Change your public profile info", link: "/profile/edit" },
+                                    { icon: Lock, label: "Privacy Settings", desc: "Control your visibility", link: "/profile/privacy" },
+                                    { icon: Bell, label: "Notification Settings", desc: "Manage your alerts", link: "/profile/notifications" },
+                                    { icon: Lock, label: "Change Password", desc: "Update your security", link: "/profile/password" },
+                                    { icon: Settings2, label: "Account Management", desc: "Subscription and billing", link: "/profile/account" },
+                                    { icon: UserCog, label: "Switch to Business Account", desc: "Switch to business account", link: "/business-registration" },
                                 ].map((item, idx) => (
-                                    <button
+                                    <Link
+                                            href={item.link}
                                         key={idx}
                                         className="flex items-center gap-4 w-full p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group border-b border-slate-50 dark:border-slate-800 last:border-0"
                                     >
@@ -69,7 +71,7 @@ export default function Profile() {
                                             <p className="text-xs text-slate-500 dark:text-slate-400">{item.desc}</p>
                                         </div>
                                         <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
-                                    </button>
+                                    </Link>
                                 ))}
                             </div>
                         </CardContent>

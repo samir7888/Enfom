@@ -60,11 +60,11 @@ export function AppSidebar() {
                                         asChild
                                         tooltip={item.title}
                                         isActive={item.isActive}
-                                        className="w-11 h-11 flex items-center justify-center p-0 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors duration-200 data-[active=true]:bg-transparent data-[active=true]:text-zinc-900 dark:data-[active=true]:text-zinc-100"
+                                        className="w-24 h-24 flex items-center justify-center p-0 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors duration-200 data-[active=true]:bg-transparent data-[active=true]:text-zinc-900 dark:data-[active=true]:text-zinc-100"
                                     >
                                         <Link href={item.url}>
                                             <item.icon
-                                                className={`size-12 ${item.isActive ? 'fill-current' : 'text-zinc-500'}`}
+                                                className={`size-52 ${item.isActive ? 'fill-current' : 'text-zinc-500'}`}
                                                 strokeWidth={item.isActive ? 2 : 1.5}
                                             />
                                         </Link>
