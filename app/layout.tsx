@@ -4,6 +4,9 @@ import "./globals.css";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/sidebar";
 
+import { queryClient } from "@/service/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,10 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
+        <QueryClientProvider client={queryClient}>
+
         <SidebarProvider defaultOpen={false}>
           <div className="flex w-full min-h-screen">
             <AppSidebar />
-            <main className="flex-1 overflow-x-hidden bg-white dark:bg-[#09090b]">
+            <main className="flex-1 overflow-x-hidden bg-gray-50 dark:bg-[#09090b]">
               <div>
                 <SidebarTrigger className="md:hidden mb-4" />
                 {children}
@@ -38,6 +43,8 @@ export default function RootLayout({
             </main>
           </div>
         </SidebarProvider>
+        </QueryClientProvider>
+ 
       </body>
     </html>
   );

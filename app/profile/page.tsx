@@ -1,13 +1,8 @@
 "use client"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { Card, CardContent } from "@/components/ui/card"
 import {
-    Heart,
-    MessageSquare,
-    Share2,
     User,
     Bell,
     Lock,
@@ -59,7 +54,7 @@ export default function Profile() {
                                     { icon: UserCog, label: "Switch to Business Account", desc: "Switch to business account", link: "/business-registration" },
                                 ].map((item, idx) => (
                                     <Link
-                                            href={item.link}
+                                        href={item.link}
                                         key={idx}
                                         className="flex items-center gap-4 w-full p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group border-b border-slate-50 dark:border-slate-800 last:border-0"
                                     >

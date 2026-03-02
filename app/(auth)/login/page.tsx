@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { useAppMutation } from '@/hooks/useAppMutation';
+import Router from 'next/router';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -31,10 +33,18 @@ export default function LoginPage() {
       password: '',
     },
   });
-
+ const {mutate} = useAppMutation()
   async function onSubmit(data: LoginValues) {
     console.log('Login data:', data);
-    // Add login logic here
+    mutate({
+      endpoint:"Auth/login",
+      method:"post",
+      data,
+      onSuccess:()=>{
+        alert("success")
+        Router.push("/")
+      }      
+    })
   }
 
   return (
