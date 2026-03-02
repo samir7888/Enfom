@@ -45,40 +45,34 @@ interface EmailEntry {
 
 type SectionId =
   | "edit-profile"
-  | "language"
-  | "notifications"
-  | "payments"
-  | "taxes"
-  | "transactions";
+  | "about"
+  | "social-media";
 
 interface NavItem {
   id: SectionId;
   label: string;
   icon: React.FC<{ size?: number; className?: string }>;
-  group: "Profile" | "Bank";
+  group: "Profile" | "About" | "Social Media";
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
-  { id: "edit-profile",  label: "Edit Profile",   icon: User,           group: "Profile" },
-  { id: "language",      label: "Language",        icon: Globe,          group: "Profile" },
-  { id: "notifications", label: "Notifications",   icon: Bell,           group: "Profile" },
-  { id: "payments",      label: "Payments",        icon: CreditCard,     group: "Bank"    },
-  { id: "taxes",         label: "Taxes",           icon: Receipt,        group: "Bank"    },
-  { id: "transactions",  label: "Transactions",    icon: ArrowLeftRight, group: "Bank"    },
+  { id: "edit-profile", label: "Edit Profile", icon: User, group: "Profile" },
+  { id: "about", label: "About Business", icon: Building2, group: "About" },
+  { id: "social-media", label: "Social Media", icon: Instagram, group: "Social Media" },
 ];
 
-const COUNTRIES  = ["United States","United Kingdom","Canada","Australia","Germany","France","India","Japan","Brazil","Other"];
-const STATES: Record<string,string[]> = {
-  "United States": ["California","New York","Texas","Florida","Washington","Illinois","Other"],
-  "United Kingdom": ["England","Scotland","Wales","Northern Ireland"],
-  "Canada": ["Ontario","Quebec","British Columbia","Alberta","Other"],
-  "Australia": ["New South Wales","Victoria","Queensland","Western Australia","Other"],
+const COUNTRIES = ["United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "India", "Japan", "Brazil", "Other"];
+const STATES: Record<string, string[]> = {
+  "United States": ["California", "New York", "Texas", "Florida", "Washington", "Illinois", "Other"],
+  "United Kingdom": ["England", "Scotland", "Wales", "Northern Ireland"],
+  "Canada": ["Ontario", "Quebec", "British Columbia", "Alberta", "Other"],
+  "Australia": ["New South Wales", "Victoria", "Queensland", "Western Australia", "Other"],
 };
-const INDUSTRIES = ["Technology","E-Commerce","Healthcare","Finance","Education","Marketing","Consulting","Retail","Real Estate","Other"];
-const TIMEZONES  = ["(UTC-8) Pacific Time","(UTC-5) Eastern Time","(UTC+0) GMT","(UTC+1) CET","(UTC+5:30) IST","(UTC+8) CST","(UTC+9) JST"];
-const LANGUAGES  = ["English","Spanish","French","German","Portuguese","Hindi","Japanese","Chinese","Arabic","Other"];
+const INDUSTRIES = ["Technology", "E-Commerce", "Healthcare", "Finance", "Education", "Marketing", "Consulting", "Retail", "Real Estate", "Other"];
+const TIMEZONES = ["(UTC-8) Pacific Time", "(UTC-5) Eastern Time", "(UTC+0) GMT", "(UTC+1) CET", "(UTC+5:30) IST", "(UTC+8) CST", "(UTC+9) JST"];
+const LANGUAGES = ["English", "Spanish", "French", "German", "Portuguese", "Hindi", "Japanese", "Chinese", "Arabic", "Other"];
 
 // ─── Primitive UI Components ─────────────────────────────────────────────────
 
@@ -185,12 +179,11 @@ function TagChip({ label, onRemove }: { label: string; onRemove: () => void }) {
 function SaveButton({ saving, saved, onClick }: { saving: boolean; saved: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} disabled={saving} type="button"
-      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm ${
-        saved ? "bg-emerald-500 text-white" : saving ? "bg-blue-400 text-white cursor-wait" : "bg-blue-600 hover:bg-blue-700 text-white active:scale-95"
-      }`}>
+      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm ${saved ? "bg-emerald-500 text-white" : saving ? "bg-blue-400 text-white cursor-wait" : "bg-blue-600 hover:bg-blue-700 text-white active:scale-95"
+        }`}>
       {saved ? <><Check size={14} />Saved!</>
         : saving ? <><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</>
-        : <><Save size={14} />Save Changes</>}
+          : <><Save size={14} />Save Changes</>}
     </button>
   );
 }
@@ -210,163 +203,45 @@ function SectionCard({ title, subtitle, children }: { title: string; subtitle?: 
 
 // ─── Placeholder panels ───────────────────────────────────────────────────────
 
-function LanguagePanel({ lang, setLang }: { lang: string; setLang: (v: string) => void }) {
-  return (
-    <div className="space-y-6">
-      <SectionCard title="Language Preferences" subtitle="Choose your preferred display language">
-        <div className="max-w-sm">
-          <Select label="Display Language" value={lang} onChange={setLang} options={LANGUAGES} placeholder="Select language" icon={Globe} />
-        </div>
-        <p className="text-xs text-slate-500 mt-4 leading-relaxed">
-          This setting changes the language used across the entire dashboard interface, including menus, labels, and system messages.
-        </p>
-      </SectionCard>
-    </div>
-  );
-}
-
-function NotificationsPanel() {
-  const [prefs, setPrefs] = useState({ email: true, push: true, sms: false, marketing: false });
-  const toggle = (k: keyof typeof prefs) => setPrefs(p => ({ ...p, [k]: !p[k] }));
-  const rows = [
-    { key: "email" as const,     label: "Email Notifications",    desc: "Receive updates and alerts via email" },
-    { key: "push" as const,      label: "Push Notifications",     desc: "Browser and mobile push alerts" },
-    { key: "sms" as const,       label: "SMS Notifications",      desc: "Text messages for critical alerts" },
-    { key: "marketing" as const, label: "Marketing Emails",       desc: "Promotions and product announcements" },
-  ];
-  return (
-    <div className="space-y-6">
-      <SectionCard title="Notification Settings" subtitle="Control how and when you hear from us">
-        <div className="space-y-4">
-          {rows.map(row => (
-            <div key={row.key} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-              <div>
-                <p className="text-sm font-semibold text-slate-800">{row.label}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{row.desc}</p>
-              </div>
-              <button type="button" onClick={() => toggle(row.key)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${prefs[row.key] ? "bg-blue-500" : "bg-slate-200"}`}>
-                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all ${prefs[row.key] ? "left-5.5 translate-x-0.5" : "left-0.5"}`} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
-function PaymentsPanel() {
-  return (
-    <div className="space-y-6">
-      <SectionCard title="Payment Methods" subtitle="Manage your saved payment methods">
-        <div className="space-y-3">
-          {[
-            { type: "Visa", last4: "4242", exp: "12/26", icon: "💳" },
-            { type: "Mastercard", last4: "8888", exp: "09/25", icon: "💳" },
-          ].map(card => (
-            <div key={card.last4} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <span className="text-2xl">{card.icon}</span>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-slate-800">{card.type} •••• {card.last4}</p>
-                <p className="text-xs text-slate-500">Expires {card.exp}</p>
-              </div>
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-bold">Active</span>
-            </div>
-          ))}
-          <button type="button" className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 rounded-xl text-sm font-semibold text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all">
-            <Plus size={14} /> Add Payment Method
-          </button>
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
-function TaxesPanel() {
-  return (
-    <div className="space-y-6">
-      <SectionCard title="Tax Information" subtitle="Your business tax details for invoicing">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <Input label="Tax ID / EIN" value="" onChange={() => {}} placeholder="XX-XXXXXXX" />
-          <Input label="VAT Number" value="" onChange={() => {}} placeholder="Enter VAT number" />
-          <Input label="Legal Business Name" value="" onChange={() => {}} placeholder="As registered" icon={Building2} />
-          <Select label="Tax Country" value="" onChange={() => {}} options={COUNTRIES} placeholder="Select country" />
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
-function TransactionsPanel() {
-  const txns = [
-    { id: "#TXN-001", date: "Mar 1, 2026", amount: "$1,200.00", status: "Completed", type: "Invoice" },
-    { id: "#TXN-002", date: "Feb 22, 2026", amount: "$850.00",  status: "Pending",   type: "Payment" },
-    { id: "#TXN-003", date: "Feb 14, 2026", amount: "$3,400.00", status: "Completed", type: "Invoice" },
-    { id: "#TXN-004", date: "Jan 30, 2026", amount: "$220.00",  status: "Failed",    type: "Refund" },
-  ];
-  const colors: Record<string,string> = { Completed: "bg-emerald-100 text-emerald-700", Pending: "bg-amber-100 text-amber-700", Failed: "bg-red-100 text-red-700" };
-  return (
-    <div className="space-y-6">
-      <SectionCard title="Transaction History" subtitle="Your recent financial activity">
-        <div className="space-y-2">
-          {txns.map(t => (
-            <div key={t.id} className="flex items-center gap-4 p-3.5 bg-slate-50 rounded-xl hover:bg-blue-50 transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0">
-                <ArrowLeftRight size={14} className="text-slate-500" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-800">{t.id} <span className="font-normal text-slate-500">— {t.type}</span></p>
-                <p className="text-xs text-slate-400">{t.date}</p>
-              </div>
-              <p className="text-sm font-black text-slate-900">{t.amount}</p>
-              <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide ${colors[t.status]}`}>{t.status}</span>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
-    </div>
-  );
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function BusinessSettings() {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [active, setActive]       = useState<SectionId>("edit-profile");
-  const [saving, setSaving]       = useState(false);
-  const [saved, setSaved]         = useState(false);
-  const [avatar, setAvatar]       = useState<string | null>(null);
-  const [tagInput, setTagInput]   = useState("");
-  const [language, setLanguage]   = useState("English");
+  const logoFileRef = useRef<HTMLInputElement>(null);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
+  const [active, setActive] = useState<SectionId>("edit-profile");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [tagInput, setTagInput] = useState("");
   const [showAddEmail, setShowAddEmail] = useState(false);
-  const [newEmail, setNewEmail]   = useState("");
-  const [emails, setEmails]       = useState<EmailEntry[]>([
-    { address: "business@acme.com", primary: true,  verified: true,  added: "3 months ago" },
-    { address: "support@acme.com",  primary: false, verified: true,  added: "1 month ago" },
+  const [newEmail, setNewEmail] = useState("");
+  const [emails, setEmails] = useState<EmailEntry[]>([
+    { address: "business@acme.com", primary: true, verified: true, added: "3 months ago" },
+    { address: "support@acme.com", primary: false, verified: true, added: "1 month ago" },
   ]);
 
   const [form, setForm] = useState<FormState>({
     businessName: "Acme Corporation",
-    ownerName:    "Alexa Rawles",
-    email:        "alexa@acme.com",
-    phone:        "+1 (555) 012-3456",
-    bio:          "We build beautiful software products for modern businesses.",
-    website:      "https://acme.com",
-    industry:     "Technology",
-    country:      "United States",
-    state:        "California",
-    city:         "San Francisco",
-    zipCode:      "94105",
-    address:      "123 Market Street, Suite 400",
-    timezone:     "(UTC-8) Pacific Time",
-    tags:         ["SaaS", "B2B", "Design"],
+    ownerName: "Alexa Rawles",
+    email: "alexa@acme.com",
+    phone: "+1 (555) 012-3456",
+    bio: "We build beautiful software products for modern businesses.",
+    website: "https://acme.com",
+    industry: "Technology",
+    country: "United States",
+    state: "California",
+    city: "San Francisco",
+    zipCode: "94105",
+    address: "123 Market Street, Suite 400",
+    timezone: "(UTC-8) Pacific Time",
+    tags: ["SaaS", "B2B", "Design"],
     social: {
       instagram: "https://instagram.com/acme",
-      twitter:   "https://twitter.com/acme",
-      linkedin:  "https://linkedin.com/company/acme",
-      facebook:  "",
-      youtube:   "",
+      twitter: "https://twitter.com/acme",
+      linkedin: "https://linkedin.com/company/acme",
+      facebook: "",
+      youtube: "",
     },
   });
 
@@ -390,101 +265,63 @@ export default function BusinessSettings() {
   const stateOptions = STATES[form.country] ?? ["Other"];
 
   // ── Grouped nav ──────────────────────────────────────────────────────────
-  const groups = ["Profile", "Bank"] as const;
+  const groups = ["Profile", "About", "Social Media"] as const;
 
-  // ── Edit Profile Panel (sub-sections) ────────────────────────────────────
+  // ── Edit Profile Panel ──────────────────────────────────────────────────
   const editProfilePanel = (
     <div className="space-y-6">
+      {/* ── Business Identity Section ── */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden relative group/banner">
+        {/* Banner Area (Full Width) */}
+        <div className="relative h-44 w-full bg-slate-100 transition-all overflow-hidden border-b border-slate-100">
+          {banner ? (
+            <img src={banner} alt="Banner" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-linear-to-br from-blue-600 via-indigo-600 to-blue-700 opacity-90 shadow-inner" />
+          )}
 
-      {/* ── Business Identity ── */}
-      <SectionCard title="Business Identity" subtitle="Your brand's core information">
-        <div className="flex items-center gap-5 mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
-          <div className="relative group shrink-0">
+          {/* Banner Edit Overlay */}
+          <button
+            onClick={() => bannerFileRef.current?.click()}
+            type="button"
+            className="absolute inset-0 bg-black/30 opacity-0 group-hover/banner:opacity-100 transition-all duration-300 flex items-center justify-center text-white z-20 backdrop-blur-[2px]"
+          >
+            <div className="flex flex-col items-center gap-2 transform translate-y-2 group-hover/banner:translate-y-0 transition-transform">
+              <Camera size={28} className="drop-shadow-md" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Update Cover</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Profile Info Overlay (Logo + Basic Details) */}
+        <div className="px-8 flex items-end gap-6 -mt-14 relative z-10 mb-8">
+          <div className="relative group/logo shrink-0">
             {avatar
-              ? <img src={avatar} alt="logo" className="w-16 h-16 rounded-2xl object-cover ring-4 ring-white shadow-md" />
-              : <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl font-black ring-4 ring-white shadow-md">{initials}</div>
+              ? <img src={avatar} alt="logo" className="w-28 h-28 rounded-3xl object-cover ring-[10px] ring-white shadow-2xl bg-white" />
+              : <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-4xl font-black ring-[10px] ring-white shadow-2xl">{initials}</div>
             }
-            <button onClick={() => fileRef.current?.click()} type="button"
-              className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Camera size={16} className="text-white" />
+            <button onClick={() => logoFileRef.current?.click()} type="button"
+              className="absolute inset-0 rounded-3xl bg-black/40 opacity-0 group-hover/logo:opacity-100 transition-opacity flex items-center justify-center z-10 transition-all">
+              <Camera size={24} className="text-white" />
             </button>
           </div>
-          <div>
-            <p className="font-black text-slate-900">{form.businessName}</p>
-            <p className="text-xs text-slate-500 mt-0.5">{form.ownerName}</p>
-            <button onClick={() => fileRef.current?.click()} type="button"
-              className="mt-1.5 text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
-              <Pencil size={10} /> Change logo
-            </button>
+          <div className="mb-2">
+            <h3 className="font-black text-slate-900 text-2xl leading-tight">{form.businessName}</h3>
+            <p className="text-sm text-slate-500 font-semibold">{form.ownerName}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Business Name"    value={form.businessName} onChange={set("businessName")} placeholder="Your business name" icon={Building2} />
-          <Input label="Owner / CEO Name" value={form.ownerName}    onChange={set("ownerName")}    placeholder="Full name" icon={User} />
-          <Select label="Industry"        value={form.industry}     onChange={set("industry")}     options={INDUSTRIES} placeholder="Select industry" />
-          <Input label="Website"          value={form.website}      onChange={set("website")}      placeholder="https://yourwebsite.com" icon={Globe} type="url" />
-          <div className="sm:col-span-2">
-            <Input label="Business Bio" value={form.bio} onChange={set("bio")} placeholder="What does your business do?" textarea rows={3} />
+        {/* Form Fields Area (with subtle background) */}
+        <div className="p-8 bg-slate-50/60 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <Input label="Business Name" value={form.businessName} onChange={set("businessName")} placeholder="Your business name" icon={Building2} />
+            <Input label="Owner / CEO Name" value={form.ownerName} onChange={set("ownerName")} placeholder="Full name" icon={User} />
+            <Select label="Industry" value={form.industry} onChange={set("industry")} options={INDUSTRIES} placeholder="Select industry" />
+            <Input label="Website" value={form.website} onChange={set("website")} placeholder="https://yourwebsite.com" icon={Globe} type="url" />
           </div>
         </div>
+      </div>
 
-        {/* Tags */}
-        <div className="mt-4">
-          <FieldLabel>Tags / Keywords</FieldLabel>
-          <div className="flex flex-wrap gap-2 mb-2.5 min-h-[26px]">
-            {form.tags.map(t => <TagChip key={t} label={t} onRemove={() => setForm(f => ({ ...f, tags: f.tags.filter(x => x !== t) }))} />)}
-          </div>
-          <div className="flex gap-2">
-            <input value={tagInput} onChange={e => setTagInput(e.target.value)}
-              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addTag()}
-              placeholder="Add tag…"
-              className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
-            <button onClick={addTag} type="button" className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">Add</button>
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* ── Contact Info ── */}
-      <SectionCard title="Contact Information" subtitle="How customers can reach you">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Business Email" value={form.email} onChange={set("email")} placeholder="email@business.com" icon={Mail} type="email" />
-          <Input label="Phone Number"   value={form.phone} onChange={set("phone")} placeholder="+1 (555) 000-0000"  icon={Phone} type="tel" />
-        </div>
-      </SectionCard>
-
-      {/* ── Location ── */}
-      <SectionCard title="Business Location" subtitle="Your registered address">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Select label="Country"            value={form.country}  onChange={v => { set("country")(v); set("state")(""); }} options={COUNTRIES} placeholder="Select country" />
-          <Select label="State / Province"   value={form.state}    onChange={set("state")}   options={stateOptions} placeholder="Select state" />
-          <Input  label="City"               value={form.city}     onChange={set("city")}    placeholder="City" icon={MapPin} />
-          <Input  label="ZIP / Postal Code"  value={form.zipCode}  onChange={set("zipCode")} placeholder="ZIP code" />
-          <div className="sm:col-span-2">
-            <Input label="Street Address" value={form.address} onChange={set("address")} placeholder="123 Main St, Suite 100" icon={MapPin} />
-          </div>
-          <div className="sm:col-span-2">
-            <Select label="Time Zone" value={form.timezone} onChange={set("timezone")} options={TIMEZONES} placeholder="Select timezone" />
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* ── Social Media ── */}
-      <SectionCard title="Social Media Links" subtitle="Connect your public profiles">
-        <div className="space-y-4">
-          <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5">
-            <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-xs text-amber-700">All URLs must include <code className="bg-amber-100 px-1 rounded font-mono">https://</code></p>
-          </div>
-          <SocialRow platform="Instagram"   icon={Instagram} value={form.social.instagram} onChange={setSocial("instagram")} colorCls="bg-gradient-to-br from-pink-500 to-orange-400" placeholder="https://instagram.com/…" />
-          <SocialRow platform="Twitter / X" icon={Twitter}   value={form.social.twitter}   onChange={setSocial("twitter")}   colorCls="bg-slate-800" placeholder="https://twitter.com/…" />
-          <SocialRow platform="LinkedIn"    icon={Linkedin}  value={form.social.linkedin}  onChange={setSocial("linkedin")}  colorCls="bg-blue-600"  placeholder="https://linkedin.com/company/…" />
-          <SocialRow platform="Facebook"    icon={Facebook}  value={form.social.facebook}  onChange={setSocial("facebook")}  colorCls="bg-blue-700"  placeholder="https://facebook.com/…" />
-          <SocialRow platform="YouTube"     icon={Youtube}   value={form.social.youtube}   onChange={setSocial("youtube")}   colorCls="bg-red-500"   placeholder="https://youtube.com/@…" />
-        </div>
-      </SectionCard>
-
-      {/* ── Email Addresses ── */}
       <SectionCard title="Email Addresses" subtitle="Manage linked email accounts">
         <div className="space-y-3 mb-4">
           {emails.map((em, i) => (
@@ -524,7 +361,7 @@ export default function BusinessSettings() {
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
             <div className="flex gap-2">
               <button type="button"
-                onClick={() => { if (newEmail.trim()) { setEmails(p => [...p, { address: newEmail.trim(), primary: false, verified: false, added: "Just now" }]); setNewEmail(""); setShowAddEmail(false); }}}
+                onClick={() => { if (newEmail.trim()) { setEmails(p => [...p, { address: newEmail.trim(), primary: false, verified: false, added: "Just now" }]); setNewEmail(""); setShowAddEmail(false); } }}
                 className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">
                 Add Email
               </button>
@@ -541,31 +378,95 @@ export default function BusinessSettings() {
           </button>
         )}
       </SectionCard>
+    </div>
+  );
 
+  // ── About Panel ──────────────────────────────────────────────────────────
+  const aboutPanel = (
+    <div className="space-y-6">
+      <SectionCard title="Business Story" subtitle="Tell your customers about your journey">
+        <Input label="Business Bio" value={form.bio} onChange={set("bio")} placeholder="What does your business do?" textarea rows={4} />
+
+        <div className="mt-6">
+          <FieldLabel>Tags / Keywords</FieldLabel>
+          <div className="flex flex-wrap gap-2 mb-2.5 min-h-[26px]">
+            {form.tags.map(t => <TagChip key={t} label={t} onRemove={() => setForm(f => ({ ...f, tags: f.tags.filter(x => x !== t) }))} />)}
+          </div>
+          <div className="flex gap-2">
+            <input value={tagInput} onChange={e => setTagInput(e.target.value)}
+              onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && addTag()}
+              placeholder="Add tag…"
+              className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
+            <button onClick={addTag} type="button" className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors">Add</button>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Contact & Location" subtitle="Public contact details and address">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <Input label="Public Business Email" value={form.email} onChange={set("email")} placeholder="email@business.com" icon={Mail} type="email" />
+          <Input label="Public Phone Number" value={form.phone} onChange={set("phone")} placeholder="+1 (555) 000-0000" icon={Phone} type="tel" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Select label="Country" value={form.country} onChange={v => { set("country")(v); set("state")(""); }} options={COUNTRIES} placeholder="Select country" />
+          <Select label="State / Province" value={form.state} onChange={set("state")} options={stateOptions} placeholder="Select state" />
+          <Input label="City" value={form.city} onChange={set("city")} placeholder="City" icon={MapPin} />
+          <Input label="ZIP / Postal Code" value={form.zipCode} onChange={set("zipCode")} placeholder="ZIP code" />
+          <div className="sm:col-span-2">
+            <Input label="Street Address" value={form.address} onChange={set("address")} placeholder="123 Main St, Suite 100" icon={MapPin} />
+          </div>
+          <div className="sm:col-span-2">
+            <Select label="Time Zone" value={form.timezone} onChange={set("timezone")} options={TIMEZONES} placeholder="Select timezone" />
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+
+  // ── Social Media Panel ───────────────────────────────────────────────────
+  const socialMediaPanel = (
+    <div className="space-y-6">
+      <SectionCard title="Social Media Links" subtitle="Connect your public profiles">
+        <div className="space-y-4">
+          <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2.5">
+            <AlertCircle size={14} className="text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-700">All URLs must include <code className="bg-amber-100 px-1 rounded font-mono">https://</code></p>
+          </div>
+          <SocialRow platform="Instagram" icon={Instagram} value={form.social.instagram} onChange={setSocial("instagram")} colorCls="bg-gradient-to-br from-pink-500 to-orange-400" placeholder="https://instagram.com/…" />
+          <SocialRow platform="Twitter / X" icon={Twitter} value={form.social.twitter} onChange={setSocial("twitter")} colorCls="bg-slate-800" placeholder="https://twitter.com/…" />
+          <SocialRow platform="LinkedIn" icon={Linkedin} value={form.social.linkedin} onChange={setSocial("linkedin")} colorCls="bg-blue-600" placeholder="https://linkedin.com/company/…" />
+          <SocialRow platform="Facebook" icon={Facebook} value={form.social.facebook} onChange={setSocial("facebook")} colorCls="bg-blue-700" placeholder="https://facebook.com/…" />
+          <SocialRow platform="YouTube" icon={Youtube} value={form.social.youtube} onChange={setSocial("youtube")} colorCls="bg-red-500" placeholder="https://youtube.com/@…" />
+        </div>
+      </SectionCard>
     </div>
   );
 
   // ── Panel map ─────────────────────────────────────────────────────────────
   const panels: Record<SectionId, React.ReactNode> = {
-    "edit-profile":  editProfilePanel,
-    "language":      <LanguagePanel lang={language} setLang={setLanguage} />,
-    "notifications": <NotificationsPanel />,
-    "payments":      <PaymentsPanel />,
-    "taxes":         <TaxesPanel />,
-    "transactions":  <TransactionsPanel />,
+    "edit-profile": editProfilePanel,
+    "about": aboutPanel,
+    "social-media": socialMediaPanel,
   };
 
-  const showSave = active === "edit-profile" || active === "language" || active === "taxes";
+  const showSave = active === "edit-profile" || active === "about" || active === "social-media";
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-slate-100" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
 
-      <input ref={fileRef} type="file" accept="image/*" className="hidden"
+      <input ref={logoFileRef} type="file" accept="image/*" className="hidden"
         onChange={(e: ChangeEvent<HTMLInputElement>) => {
           const f = e.target.files?.[0];
           if (f) setAvatar(URL.createObjectURL(f));
+        }} />
+
+      <input ref={bannerFileRef} type="file" accept="image/*" className="hidden"
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          const f = e.target.files?.[0];
+          if (f) setBanner(URL.createObjectURL(f));
         }} />
 
       <div className="max-w-5xl mx-auto px-4 py-10 flex flex-col lg:flex-row gap-6 items-start">
@@ -580,7 +481,7 @@ export default function BusinessSettings() {
                 ? <img src={avatar} alt="logo" className="w-11 h-11 rounded-xl object-cover ring-2 ring-white shadow" />
                 : <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-base font-black ring-2 ring-white shadow">{initials}</div>
               }
-              <button onClick={() => fileRef.current?.click()} type="button"
+              <button onClick={() => logoFileRef.current?.click()} type="button"
                 className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <Camera size={13} className="text-white" />
               </button>
@@ -602,7 +503,7 @@ export default function BusinessSettings() {
                 </div>
                 {/* Nav items */}
                 {items.map(item => {
-                  const Icon   = item.icon;
+                  const Icon = item.icon;
                   const isActive = active === item.id;
                   return (
                     <button

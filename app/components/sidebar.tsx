@@ -1,3 +1,5 @@
+"use client";
+
 import {
     Sidebar,
     SidebarContent,
@@ -8,30 +10,33 @@ import {
     SidebarGroup,
     SidebarGroupContent,
 } from "@/components/ui/sidebar"
-import { Home, Compass, Lightbulb, Bookmark, User, LayoutGrid } from "lucide-react"
+import { Home, Compass, Lightbulb, Bookmark, User, LayoutGrid, Inbox, MessageCircle } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { InboxContent } from "@/components/inbox-content"
 
 const sidebarLinks = [
     {
         title: "Home",
         url: "/",
         icon: Home,
-        isActive: true,
     },
+
     {
         title: "Explore",
         url: "/explore",
         icon: Compass,
     },
     {
-        title: "Ideas",
-        url: "/ideas",
-        icon: Lightbulb,
+        title: "Saved",
+        url: "/saved",
+        icon: Bookmark,
     },
     {
-        title: "Bookmarks",
-        url: "/bookmarks",
-        icon: Bookmark,
+        title: "Inbox",
+        icon: MessageCircle,
+        isInbox: true,
     },
     {
         title: "Profile",
@@ -41,6 +46,8 @@ const sidebarLinks = [
 ]
 
 export function AppSidebar() {
+    const pathname = usePathname();
+
     return (
         <Sidebar collapsible="icon" className="border-r w-full border-gray-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 transition-all duration-300">
             <SidebarHeader className="flex items-center justify-center py-6">
@@ -54,23 +61,45 @@ export function AppSidebar() {
                 <SidebarGroup className="p-0">
                     <SidebarGroupContent>
                         <SidebarMenu className="items-center gap-5 py-4">
-                            {sidebarLinks.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        tooltip={item.title}
-                                        isActive={item.isActive}
-                                        className="w-24 h-24 flex items-center justify-center p-0 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors duration-200 data-[active=true]:bg-transparent data-[active=true]:text-zinc-900 dark:data-[active=true]:text-zinc-100"
-                                    >
-                                        <Link href={item.url}>
-                                            <item.icon
-                                                className={`size-7 ${item.isActive ? 'fill-current' : 'text-zinc-500'}`}
-                                                strokeWidth={item.isActive ? 2 : 1.5}
-                                            />
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {sidebarLinks.map((item) => {
+                                const isActive = item.url === pathname;
+                                return (
+                                    <SidebarMenuItem key={item.title}>
+                                        {item.isInbox ? (
+                                            <Sheet >
+                                                <SheetTrigger asChild>
+                                                    <SidebarMenuButton
+                                                        tooltip={item.title}
+                                                        className="w-24 h-24 flex items-center justify-center p-0 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors duration-200"
+                                                    >
+                                                        <item.icon
+                                                            className="size-7 text-zinc-500"
+                                                            strokeWidth={1.5}
+                                                        />
+                                                    </SidebarMenuButton>
+                                                </SheetTrigger>
+                                                <SheetContent side="left" className="pb-2 left-24 my-12 rounded-xl h-fit sm:max-w-md shadow-2xl border-r border-slate-100 dark:border-zinc-800">
+                                                    <InboxContent />
+                                                </SheetContent>
+                                            </Sheet>
+                                        ) : (
+                                            <SidebarMenuButton
+                                                asChild
+                                                tooltip={item.title}
+                                                isActive={isActive}
+                                                className="w-24 h-24 flex items-center justify-center p-0 rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors duration-200 data-[active=true]:bg-transparent data-[active=true]:text-primary dark:data-[active=true]:text-primary"
+                                            >
+                                                <Link href={item.url || "#"}>
+                                                    <item.icon
+                                                        className={`size-7 ${isActive ? 'fill-primary text-primary' : 'text-zinc-500'}`}
+                                                        strokeWidth={isActive ? 2 : 1.5}
+                                                    />
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        )}
+                                    </SidebarMenuItem>
+                                )
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
