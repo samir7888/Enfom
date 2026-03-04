@@ -1,27 +1,59 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
-  Search, Bell, FileText, Share2, MessageSquare,
-  ChevronRight, Filter, Plus, Eye, Clock,
-  TrendingUp, Star, LayoutGrid, List, HelpCircle,
-  X, Send, Link as LinkIcon, User, Check,
-  ArrowRight, Calendar, MoreHorizontal, Heart,
-  MessageCircle, Bookmark, AlertCircle, ThumbsUp
+  Search,
+  Bell,
+  FileText,
+  Share2,
+  MessageSquare,
+  ChevronRight,
+  Filter,
+  Plus,
+  Eye,
+  Clock,
+  TrendingUp,
+  Star,
+  LayoutGrid,
+  List,
+  HelpCircle,
+  X,
+  Send,
+  Link as LinkIcon,
+  User,
+  Check,
+  ArrowRight,
+  Calendar,
+  MoreHorizontal,
+  Heart,
+  MessageCircle,
+  Bookmark,
+  AlertCircle,
+  ThumbsUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
 import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback
-} from "@/components/ui/avatar";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { MOCK_NOTICES, Notice } from "@/lib/noticeData";
 
 // --- Types ---
 
@@ -39,26 +71,7 @@ interface FormCardData {
   status: "ACTIVE" | "PENDING" | "EXPIRED";
 }
 
-interface Notice {
-  id: string;
-  title: string;
-  message: string;
-  source: string;
-  category: string;
-  status: "active" | "inactive";
-  priority: "High" | "Medium" | "Low";
-  views: string;
-  comments: number;
-  interested: number;
-  responses: number;
-  createdAt: string;
-  image?: string;
-  authorInitials: string;
-  formType?: string;
-}
-
 // --- Mock Data ---
-
 
 const FORM_CATEGORIES = [
   "All Forms",
@@ -78,86 +91,61 @@ const FORM_CATEGORIES = [
   "Research",
   "Events",
   "Survey",
-  "Application"
+  "Application",
 ];
 
-const NOTICE_CATEGORIES = ["All Notices", "Urgent", "Events", "Updates", "Internal", "External"];
+const NOTICE_CATEGORIES = [
+  "All Notices",
+  "Urgent",
+  "Events",
+  "Updates",
+  "Internal",
+  "External",
+];
 
 const MOCK_FORMS: FormCardData[] = [
   {
     id: "f1",
     title: "Q1 Marketing Campaign Proposal Request",
     category: "Marketing",
-    description: "Seeking creative agencies to submit comprehensive digital marketing strategy...",
+    description:
+      "Seeking creative agencies to submit comprehensive digital marketing strategy...",
     responses: 8,
     views: "55.6k",
     author: "Nixtio",
     subAuthor: "School",
     createdAt: "Dec 28",
     priority: "High",
-    status: "ACTIVE"
+    status: "ACTIVE",
   },
   {
     id: "f2",
     title: "Vendor Partnership Evaluation Form",
     category: "Operations",
-    description: "Complete the vendor assessment questionnaire for potential logistics...",
+    description:
+      "Complete the vendor assessment questionnaire for potential logistics...",
     responses: 3,
     views: "55.6k",
     author: "Nixtio",
     subAuthor: "School",
     createdAt: "Jan 05",
     priority: "Medium",
-    status: "PENDING"
+    status: "PENDING",
   },
   {
     id: "f3",
     title: "Sales Pipeline Review - Q4 Analysis",
     category: "Sales",
-    description: "Team members submit weekly pipeline updates with deal status, blockers, and...",
+    description:
+      "Team members submit weekly pipeline updates with deal status, blockers, and...",
     responses: 12,
     views: "55.6k",
     author: "Nixtio",
     subAuthor: "School",
     createdAt: "Dec 30",
     priority: "High",
-    status: "ACTIVE"
-  }
-];
-
-const MOCK_NOTICES: Notice[] = [
-  {
-    id: "n1",
-    title: "Q1 Marketing Campaign Proposal Request",
-    message: "Seeking creative agencies to submit comprehensive digital marketing strategies for our product launch targeting B2B SaaS companies.",
-    source: "TechVentures Inc.",
-    category: "Marketing",
-    status: "active",
-    priority: "High",
-    views: "55.6k",
-    comments: 2,
-    interested: 49,
-    responses: 8,
-    authorInitials: "TI",
-    createdAt: "Dec 28",
-    formType: "Business Form / Proposal"
+    status: "ACTIVE",
   },
-  {
-    id: "n2",
-    title: "Vendor Partnership Evaluation Form",
-    message: "Complete the vendor assessment questionnaire for potential logistics and distribution partnerships in emerging markets.",
-    source: "Global Logistics",
-    category: "Operations",
-    status: "inactive",
-    priority: "Medium",
-    views: "12.4k",
-    comments: 5,
-    interested: 22,
-    responses: 3,
-    authorInitials: "GL",
-    createdAt: "Jan 02",
-    formType: "Partnership Form"
-  }
 ];
 
 // --- Main Component ---
@@ -169,11 +157,15 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [showAllCategories, setShowAllCategories] = useState(false);
 
-  const filteredForms = MOCK_FORMS.filter(form => {
-    const matchesSearch = form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredForms = MOCK_FORMS.filter((form) => {
+    const matchesSearch =
+      form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       form.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All Forms" || form.category === selectedCategory;
-    const matchesStatus = statusFilter === "All" || form.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesCategory =
+      selectedCategory === "All Forms" || form.category === selectedCategory;
+    const matchesStatus =
+      statusFilter === "All" ||
+      form.status.toLowerCase() === statusFilter.toLowerCase();
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -183,7 +175,10 @@ export default function Home() {
       <nav className="sticky top-0 z-50 bg-white border-b border-gray-100 px-8 py-4">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="relative group w-full max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#10B981] transition-colors" size={18} />
+            <Search
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#10B981] transition-colors"
+              size={18}
+            />
             <Input
               placeholder="Search forms, notices..."
               className="pl-12 bg-gray-50 border-none rounded-2xl h-11 focus-visible:ring-2 focus-visible:ring-emerald-100 transition-all font-medium"
@@ -193,7 +188,7 @@ export default function Home() {
           </div>
 
           <div className="hidden lg:flex items-center gap-1 bg-gray-50/80 p-1 rounded-xl border border-gray-100/50">
-            {["All", "Pending", "Active"].map(status => (
+            {["All", "Pending", "Active"].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -210,54 +205,74 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="rounded-xl text-gray-500 hover:bg-gray-50 relative shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-xl text-gray-500 hover:bg-gray-50 relative shrink-0"
+            >
               <Bell className="size-6" />
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             </Button>
 
             <div className="flex items-center gap-3 pl-2 border-l border-gray-100 group cursor-pointer">
-
               <Avatar className="size-10 rounded-xl transition-all group-hover:ring-2 group-hover:ring-emerald-500/10">
                 <AvatarImage src="https://ui-avatars.com/api/?name=Maneesh+Pandey&background=10B981&color=fff" />
-                <AvatarFallback className="rounded-xl bg-emerald-50 text-emerald-600 font-bold">MP</AvatarFallback>
+                <AvatarFallback className="rounded-xl bg-emerald-50 text-emerald-600 font-bold">
+                  MP
+                </AvatarFallback>
               </Avatar>
               <div className="text-right hidden sm:block">
-                <p className="text-[13px] font-bold text-gray-900 leading-none">Maneesh Pandey</p>
-                <p className="text-[11px] font-medium text-gray-400 mt-1">@maneeshpandey</p>
+                <p className="text-[13px] font-bold text-gray-900 leading-none">
+                  Maneesh Pandey
+                </p>
+                <p className="text-[11px] font-medium text-gray-400 mt-1">
+                  @maneeshpandey
+                </p>
               </div>
             </div>
           </div>
         </div>
       </nav>
 
-
-
       <main className="max-w-[1400px] bg-gray-50   h-screen mx-auto p-8 pt-4">
         <div className="flex flex-col  lg:flex-row gap-8">
-
-
           {/* --- Main Content Area --- */}
           <div className="flex-1 min-h-screen no-scrollbar pb-24">
             {/* --- Sub Header (Title & Tabs) --- */}
             <div className="mb-8 max-w-[1400px] mx-auto flex items-center justify-between">
-              <h1 className="text-[28px] font-black tracking-tight">Business Feed</h1>
+              <h1 className="text-[28px] font-black tracking-tight">
+                Business Feed
+              </h1>
 
-              <Tabs defaultValue="form" onValueChange={setActiveTab} className="bg-white border border-gray-100 p-1 rounded-xl shadow-sm">
+              <Tabs
+                defaultValue="form"
+                onValueChange={setActiveTab}
+                className="bg-white border border-gray-100 p-1 rounded-xl shadow-sm"
+              >
                 <TabsList className="bg-transparent h-9">
-                  <TabsTrigger value="form" className="rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-6 font-bold text-xs transition-all text-gray-400">Form</TabsTrigger>
-                  <TabsTrigger value="notice" className="rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-6 font-bold text-xs transition-all text-gray-400">Notice</TabsTrigger>
+                  <TabsTrigger
+                    value="form"
+                    className="rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-6 font-bold text-xs transition-all text-gray-400"
+                  >
+                    Form
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="notice"
+                    className="rounded-lg data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 px-6 font-bold text-xs transition-all text-gray-400"
+                  >
+                    Notice
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
               {activeTab === "form" ? (
-                filteredForms.map(form => (
+                filteredForms.map((form) => (
                   <FormCard key={form.id} form={form} />
                 ))
               ) : (
                 <div className="col-span-full space-y-6">
-                  {MOCK_NOTICES.map(notice => (
+                  {MOCK_NOTICES.map((notice) => (
                     <NoticeItem key={notice.id} notice={notice} />
                   ))}
                 </div>
@@ -268,9 +283,14 @@ export default function Home() {
           {/* --- Right Sidebar Categories --- */}
           <aside className="w-full lg:w-80 shrink-0 lg:sticky lg:top-[100px] self-start z-30">
             <div className="bg-white rounded-2xl p-6 border border-gray-100/80 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">Categories</h3>
+              <h3 className="text-sm font-bold text-gray-900 mb-4 uppercase tracking-wider">
+                Categories
+              </h3>
               <div className="grid grid-cols-2 gap-2">
-                {(showAllCategories ? FORM_CATEGORIES : FORM_CATEGORIES.slice(0, 8)).map(cat => (
+                {(showAllCategories
+                  ? FORM_CATEGORIES
+                  : FORM_CATEGORIES.slice(0, 8)
+                ).map((cat) => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
@@ -282,7 +302,13 @@ export default function Home() {
                     )}
                   >
                     {cat}
-                    <ChevronRight size={14} className={cn("opacity-0 group-hover:opacity-100 transition-all", selectedCategory === cat && "opacity-100")} />
+                    <ChevronRight
+                      size={14}
+                      className={cn(
+                        "opacity-0 group-hover:opacity-100 transition-all",
+                        selectedCategory === cat && "opacity-100"
+                      )}
+                    />
                   </button>
                 ))}
               </div>
@@ -292,15 +318,31 @@ export default function Home() {
                 className="mt-4 w-full py-2 text-sm font-bold text-gray-400 hover:text-emerald-600 transition-colors flex items-center justify-center gap-1"
               >
                 {showAllCategories ? "Show less" : "See more categories"}
-                <ChevronRight size={16} className={cn("transition-transform", showAllCategories && "rotate-90")} />
+                <ChevronRight
+                  size={16}
+                  className={cn(
+                    "transition-transform",
+                    showAllCategories && "rotate-90"
+                  )}
+                />
               </button>
             </div>
 
             {/* --- Sidebar Footer --- */}
             <div className="mt-8 px-2">
               <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4">
-                {["See more", "Reddit Rules", "Privacy Policy", "User Agreement", "Accessibility"].map((link) => (
-                  <a key={link} href="#" className="text-[12px] font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase tracking-tight">
+                {[
+                  "See more",
+                  "Reddit Rules",
+                  "Privacy Policy",
+                  "User Agreement",
+                  "Accessibility",
+                ].map((link) => (
+                  <a
+                    key={link}
+                    href="#"
+                    className="text-[12px] font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase tracking-tight"
+                  >
                     {link}
                   </a>
                 ))}
@@ -311,7 +353,6 @@ export default function Home() {
             </div>
           </aside>
         </div>
-
       </main>
     </div>
   );
@@ -325,12 +366,19 @@ function FormCard({ form }: { form: FormCardData }) {
       <CardHeader className="p-6 pb-2">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium text-gray-400">{form.category}</span>
-            <Badge className={cn(
-              "rounded-lg px-2 py-0.5 text-[10px] font-bold border-none",
-              form.status === "ACTIVE" ? "bg-emerald-50 text-emerald-600" :
-                form.status === "PENDING" ? "bg-amber-50 text-amber-600" : "bg-gray-100 text-gray-500"
-            )}>
+            <span className="text-[13px] font-medium text-gray-400">
+              {form.category}
+            </span>
+            <Badge
+              className={cn(
+                "rounded-lg px-2 py-0.5 text-[10px] font-bold border-none",
+                form.status === "ACTIVE"
+                  ? "bg-emerald-50 text-emerald-600"
+                  : form.status === "PENDING"
+                  ? "bg-amber-50 text-amber-600"
+                  : "bg-gray-100 text-gray-500"
+              )}
+            >
               {form.status}
             </Badge>
           </div>
@@ -351,7 +399,12 @@ function FormCard({ form }: { form: FormCardData }) {
             {form.createdAt}
           </div>
           <div className="flex items-center gap-1.5 text-xs font-medium">
-            <div className={cn("w-2 h-2 rounded-full", form.priority === "High" ? "bg-red-500" : "bg-amber-500")} />
+            <div
+              className={cn(
+                "w-2 h-2 rounded-full",
+                form.priority === "High" ? "bg-red-500" : "bg-amber-500"
+              )}
+            />
             {form.priority}
           </div>
           <div className="flex items-center gap-1.5 text-xs font-medium">
@@ -368,20 +421,32 @@ function FormCard({ form }: { form: FormCardData }) {
                 Respond
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="sm:max-w-xl p-0 border-none shadow-2xl bg-white">
+            <SheetContent
+              side="right"
+              className="sm:max-w-xl p-0 border-none shadow-2xl bg-white"
+            >
               {/* Response form content... */}
               <div className="p-10">
                 <h2 className="text-2xl font-bold mb-6">Form Response</h2>
-                <p className="text-gray-500">Form implementation details go here.</p>
+                <p className="text-gray-500">
+                  Form implementation details go here.
+                </p>
               </div>
             </SheetContent>
           </Sheet>
 
-          <Button variant="secondary" className="h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl flex-1 border-none">
+          <Button
+            variant="secondary"
+            className="h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl flex-1 border-none"
+          >
             Fill Form
           </Button>
 
-          <Button variant="ghost" size="icon" className="h-11 w-11 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-400">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-11 w-11 bg-gray-50 hover:bg-gray-100 rounded-xl text-gray-400"
+          >
             <ArrowRight size={18} />
           </Button>
         </div>
@@ -393,14 +458,20 @@ function FormCard({ form }: { form: FormCardData }) {
             {form.author.charAt(0)}
           </div>
           <div>
-            <p className="text-[13px] font-bold text-gray-900 leading-none mb-0.5">{form.author}</p>
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">{form.subAuthor}</p>
+            <p className="text-[13px] font-bold text-gray-900 leading-none mb-0.5">
+              {form.author}
+            </p>
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+              {form.subAuthor}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5">
           <span className="text-[14px] font-semibold text-gray-900">👍</span>
-          <span className="text-[13px] font-bold text-gray-400 italic">{form.views}</span>
+          <span className="text-[13px] font-bold text-gray-400 italic">
+            {form.views}
+          </span>
         </div>
       </CardFooter>
     </Card>
@@ -409,109 +480,152 @@ function FormCard({ form }: { form: FormCardData }) {
 
 function NoticeItem({ notice }: { notice: Notice }) {
   return (
-    <Card className="rounded-2xl border-gray-200/60 shadow-sm overflow-hidden bg-white border">
-      <div className="p-6 md:p-8">
-        {/* Card Header */}
-        <div className="flex items-start justify-between mb-5">
-          <div className="flex items-center gap-4">
-            <div className="size-12 rounded-full bg-gradient-to-br from-slate-700 to-emerald-900 flex items-center justify-center text-white font-bold text-lg select-none">
-              {notice.authorInitials}
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[17px] font-bold text-gray-900 leading-none">{notice.source}</span>
-                <Badge className="bg-gray-100 text-gray-400 border-none rounded-md px-2 py-0.5 text-[11px] font-bold">
-                  {notice.category}
-                </Badge>
+    <Link href={`/notice/${notice.id}`} className="block">
+      <Card className="rounded-2xl border-gray-200/60 shadow-sm overflow-hidden bg-white border hover:shadow-lg transition-all cursor-pointer group">
+        <div className="p-6 md:p-8">
+          {/* Card Header */}
+          <div className="flex items-start justify-between mb-5">
+            <div className="flex items-center gap-4">
+              <div className="size-12 rounded-full bg-gradient-to-br from-slate-700 to-emerald-900 flex items-center justify-center text-white font-bold text-lg select-none">
+                {notice.authorInitials}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-gray-400">{notice.createdAt}</span>
-                <span className="text-gray-300">•</span>
-                <Badge variant="outline" className={cn(
-                  "rounded-lg px-2 py-0 text-[10px] font-bold border-none h-5 flex items-center shadow-none",
-                  notice.status === "active" ? "bg-emerald-50 text-emerald-600/70" : "bg-gray-50 text-gray-400"
-                )}>
-                  {notice.status}
-                </Badge>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[17px] font-bold text-gray-900 leading-none group-hover:text-blue-600 transition-colors">
+                    {notice.source}
+                  </span>
+                  <Badge className="bg-gray-100 text-gray-400 border-none rounded-md px-2 py-0.5 text-[11px] font-bold">
+                    {notice.category}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-medium text-gray-400">
+                    {notice.createdAt}
+                  </span>
+                  <span className="text-gray-300">•</span>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "rounded-lg px-2 py-0 text-[10px] font-bold border-none h-5 flex items-center shadow-none",
+                      notice.status === "active"
+                        ? "bg-emerald-50 text-emerald-600/70"
+                        : "bg-gray-50 text-gray-400"
+                    )}
+                  >
+                    {notice.status}
+                  </Badge>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <Badge className={cn(
-              "rounded-xl px-3 py-1.5 text-[12px] font-bold border-none gap-1.5",
-              notice.priority === "High" ? "bg-red-50 text-red-500" : "bg-amber-50 text-amber-500"
-            )}>
-              <AlertCircle size={14} className={notice.priority === "High" ? "text-red-400" : "text-amber-400"} />
-              {notice.priority}
-            </Badge>
-            <button className="text-gray-400 hover:text-gray-900 transition-colors p-1">
-              <MoreHorizontal size={20} />
-            </button>
-          </div>
-        </div>
-
-        {/* Content Section */}
-        <div className="space-y-4 mb-6">
-          <h3 className="text-[20px] font-bold text-gray-900 leading-tight">
-            {notice.title}
-          </h3>
-          <p className="text-gray-400/90 text-[16px] leading-[1.6] font-medium">
-            {notice.message}
-          </p>
-        </div>
-
-        {/* Form Placeholder Box */}
-        <div className="bg-[#F8F9FA] rounded-2xl p-12 mb-6 border border-gray-100 border-dashed flex flex-col items-center justify-center gap-4 group cursor-pointer hover:bg-gray-50/80 transition-all">
-          <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-300 group-hover:text-emerald-500 transition-all shadow-sm">
-            <FileText size={32} />
-          </div>
-          <div className="text-center">
-            <p className="text-[15px] font-bold text-gray-400/80 group-hover:text-gray-500">{notice.formType || "Business Form"}</p>
-          </div>
-        </div>
-
-        {/* Social Stats */}
-        <div className="flex items-center justify-between pb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-red-400/90 flex items-center justify-center">
-              <Heart size={12} fill="white" className="text-white" />
+            <div className="flex items-center gap-3">
+              <Badge
+                className={cn(
+                  "rounded-xl px-3 py-1.5 text-[12px] font-bold border-none gap-1.5",
+                  notice.priority === "High"
+                    ? "bg-red-50 text-red-500"
+                    : "bg-amber-50 text-amber-500"
+                )}
+              >
+                <AlertCircle
+                  size={14}
+                  className={
+                    notice.priority === "High"
+                      ? "text-red-400"
+                      : "text-amber-400"
+                  }
+                />
+                {notice.priority}
+              </Badge>
+              <button
+                className="text-gray-400 hover:text-gray-900 transition-colors p-1"
+                onClick={(e) => e.preventDefault()}
+              >
+                <MoreHorizontal size={20} />
+              </button>
             </div>
-            <span className="text-[14px] font-medium text-gray-400">
-              {notice.interested} interested
-            </span>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[14px] font-medium text-gray-400 italic">
-              {notice.comments} comments
-            </span>
-            <span className="text-[14px] font-medium text-gray-400 italic">
-              {notice.responses} responses
-            </span>
-          </div>
-        </div>
 
-        {/* Action Bar */}
-        <div className="pt-4 border-t border-gray-100/80 flex items-center justify-between">
-          <div className="flex items-center gap-1 sm:gap-4 flex-1">
-            <Button variant="ghost" className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4">
-              <Heart size={18} />
-              Interested
-            </Button>
-            <Button variant="ghost" className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4">
-              <MessageCircle size={18} />
-              Comment
-            </Button>
-            <Button variant="ghost" className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4">
-              <FileText size={18} />
-              Fill Form
+          {/* Content Section */}
+          <div className="space-y-4 mb-6">
+            <h3 className="text-[20px] font-bold text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">
+              {notice.title}
+            </h3>
+            <p className="text-gray-400/90 text-[16px] leading-[1.6] font-medium">
+              {notice.message}
+            </p>
+          </div>
+
+          {/* Notice Image Preview */}
+          {notice.image && (
+            <div className="mb-6 rounded-2xl overflow-hidden">
+              <img
+                src={notice.image}
+                alt={notice.title}
+                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            </div>
+          )}
+
+          {/* Social Stats */}
+          <div className="flex items-center justify-between pb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-red-400/90 flex items-center justify-center">
+                <Heart size={12} fill="white" className="text-white" />
+              </div>
+              <span className="text-[14px] font-medium text-gray-400">
+                {notice.interested} interested
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-[14px] font-medium text-gray-400 italic">
+                {notice.comments} comments
+              </span>
+              <span className="text-[14px] font-medium text-gray-400 italic">
+                {notice.responses} responses
+              </span>
+            </div>
+          </div>
+
+          {/* Action Bar */}
+          <div className="pt-4 border-t border-gray-100/80 flex items-center justify-between">
+            <div className="flex items-center gap-1 sm:gap-4 flex-1">
+              <Button
+                variant="ghost"
+                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4"
+                onClick={(e) => e.preventDefault()}
+              >
+                <Heart size={18} />
+                Interested
+              </Button>
+              <Button
+                variant="ghost"
+                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4"
+                onClick={(e) => e.preventDefault()}
+              >
+                <MessageCircle size={18} />
+                Comment
+              </Button>
+              <Button
+                variant="ghost"
+                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4"
+                onClick={(e) => e.preventDefault()}
+              >
+                <FileText size={18} />
+                Fill Form
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-11 w-11 rounded-xl text-gray-400 hover:text-gray-900"
+              onClick={(e) => e.preventDefault()}
+            >
+              <Bookmark size={20} />
             </Button>
           </div>
-          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-gray-400 hover:text-gray-900">
-            <Bookmark size={20} />
-          </Button>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 }
