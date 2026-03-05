@@ -1,0 +1,222 @@
+"use client";
+
+import { FormConfig } from "../config/forms";
+import FormCard from "./FormCard";
+
+// Mock form configurations with all field types and diverse styles
+const MOCK_FORM_CONFIGS: FormConfig = 
+  // {
+  //   formTitle: "User Registration Form",
+  //   style: "default",
+  //   fields: [
+  //     {
+  //       name: "firstName",
+  //       label: "First Name",
+  //       type: "text",
+  //       placeholder: "Enter your first name",
+  //       required: true,
+  //     },
+  //     {
+  //       name: "lastName",
+  //       label: "Last Name",
+  //       type: "text",
+  //       placeholder: "Enter your last name",
+  //       required: true,
+  //     },
+  //     {
+  //       name: "email",
+  //       label: "Email Address",
+  //       type: "email",
+  //       placeholder: "Enter your email",
+  //       required: true,
+  //     },
+  //     {
+  //       name: "password",
+  //       label: "Password",
+  //       type: "password",
+  //       placeholder: "Create a strong password",
+  //       required: true,
+  //       strengthMeter: true,
+  //     },
+  //     {
+  //       name: "phone",
+  //       label: "Phone Number",
+  //       type: "tel",
+  //       placeholder: "+1 (555) 123-4567",
+  //       required: false,
+  //     },
+  //     {
+  //       name: "submitBtn",
+  //       label: "Create Account",
+  //       type: "button",
+  //     },
+  //   ],
+  // },
+
+  {
+    formTitle: "Personal Information",
+    fields: [
+      {
+        name: "title",
+        label: "Personal Information",
+        type: "display",
+        styles: {
+          background: "#ffcccc",
+          color: "#cc0000",
+          border: "2px solid #ff9999",
+          borderRadius: "10px",
+          padding: "15px",
+          fontSize: "1.2rem",
+          fontWeight: "bold",
+          textAlign: "center",
+          marginBottom: "20px",
+          display: "block",
+        },
+      },
+      {
+        name: "name",
+        label: "Full Name",
+        type: "text",
+        placeholder: "Enter your full name",
+        required: true,
+        styles: {
+          background: "#ffe6e6",
+          color: "#cc0000",
+          border: "2px solid #ff9999",
+          borderRadius: "8px",
+          padding: "12px",
+          width: "100%",
+          outline: "none",
+        },
+      },
+      {
+        name: "password",
+        label: "Password",
+        type: "password",
+        placeholder: "Enter your full name",
+        strengthMeter: true,
+        required: true,
+        styles: {
+          background: "#ffe6e6",
+          color: "#cc0000",
+          border: "2px solid #ff9999",
+          borderRadius: "8px",
+          padding: "12px",
+          width: "100%",
+          outline: "none",
+        },
+      },
+      {
+        name: "age",
+        label: "Age",
+        type: "number",
+        placeholder: "Enter your age",
+        required: true,
+        styles: {
+          background: "#ffe6e6",
+          color: "#cc0000",
+          border: "2px solid #ff9999",
+          borderRadius: "8px",
+          padding: "12px",
+          width: "100%",
+          outline: "none",
+        },
+      },
+      {
+        name: "country",
+        label: "Country",
+        type: "text",
+        placeholder: "Enter your country",
+        required: true,
+        styles: {
+          background: "#ffe6e6",
+          color: "#cc0000",
+          border: "2px solid #ff9999",
+          borderRadius: "8px",
+          padding: "12px",
+          width: "100%",
+          outline: "none",
+        },
+      },
+      {
+        name: "address",
+        label: "Address",
+        type: "text",
+        placeholder: "Enter your address",
+        required: true,
+        styles: {
+          background: "#ffe6e6",
+          color: "#cc0000",
+          border: "2px solid #ff9999",
+          borderRadius: "8px",
+          padding: "12px",
+          width: "100%",
+          outline: "none",
+        },
+      },
+      {
+        name: "photo",
+        label: "Profile Photo",
+        type: "image",
+        required: true,
+        accept: "image/*",
+        maxSizeMB: 2,
+        hint: "JPG, PNG or WEBP — max 2MB",
+        icon: "🖼️",
+        styles: { border: "2px dashed #ff9999", background: "#fff5f5" },
+      },
+      {
+        name: "citizenship",
+        label: "Citizenship Document",
+        type: "file",
+        required: true,
+        accept: ".pdf,.jpg,.jpeg,.png",
+        maxSizeMB: 5,
+        hint: "PDF or image — max 5MB",
+        icon: "📄",
+        styles: { border: "2px dashed #ff9999", background: "#fff5f5" },
+      },
+      {
+        name: "Button",
+        label: "Submit",
+        type: "button",
+        styles: {
+          background: "#007bff",
+          color: "#fff",
+          border: "2px solid #007bff",
+          borderRadius: "8px",
+          padding: "13px",
+          width: "100%",
+          cursor: "pointer",
+          fontSize: "1rem",
+          fontWeight: "700",
+          marginTop: "8px",
+        },
+      },
+    ],
+  
+  }
+;
+
+export default function FormPage() {
+  return (
+    <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Interactive Form Examples
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Explore different form styles and field types. Fill out the forms
+            below to see validation, file uploads, and various input types in
+            action.
+          </p>
+        </div>
+
+        <div className="mx-auto">
+            <FormCard  config={MOCK_FORM_CONFIGS}  />
+        </div>
+      </div>
+    </div>
+  );
+}

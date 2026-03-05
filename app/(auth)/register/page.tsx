@@ -15,10 +15,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-
+import { useAppMutation } from '@/hooks/useAppMutation';
+import { useRouter } from 'next/navigation';
 const registerSchema = z.object({
-  firstName: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
-  lastName: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
+  userName: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Invalid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
 });
@@ -26,19 +26,28 @@ const registerSchema = z.object({
 type RegisterValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
+  const router = useRouter()
+  const { mutate, isPending } = useAppMutation()
+
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
+      userName: '',
       email: '',
       password: '',
     },
   });
 
   async function onSubmit(data: RegisterValues) {
-    console.log('Registration data:', data);
-    // Add registration logic here
+    mutate({
+      endpoint: "Auth/register",
+      method: "post",
+      data,
+      onSuccess: () => {
+        alert("success")
+        router.push("/")
+      }
+    })
   }
 
   return (
@@ -53,34 +62,19 @@ export default function RegisterPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
+              <FormField
                   control={form.control}
-                  name="firstName"
+                  name="userName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First Name</FormLabel>
+                      <FormLabel>Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="John" {...field} />
+                        <Input placeholder="Username" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
               <FormField
                 control={form.control}
                 name="email"
@@ -107,13 +101,13 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Creating account...' : 'Sign up'}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? 'Creating account...' : 'Sign up'}
               </Button>
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4 text-center">
+        <CardFooter className="flex mt-4 flex-col space-y-4 text-center">
           <div className="text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link href="/login" className="text-primary underline-offset-4 hover:underline">

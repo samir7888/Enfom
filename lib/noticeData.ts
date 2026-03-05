@@ -97,6 +97,37 @@ export const MOCK_NOTICES: Notice[] = [
   },
 ];
 
+
+export const mockComments = [
+  {
+    id: "1",
+    author: "Sarah Johnson",
+    authorInitials: "SJ",
+    comment: "This is a great initiative! Looking forward to the results.",
+    createdAt: "2 hours ago",
+    likes: 12,
+    replies: 3,
+  },
+  {
+    id: "2",
+    author: "Mike Davis",
+    authorInitials: "MD",
+    comment: "I have a few questions about the proposal requirements. Can we schedule a call?",
+    createdAt: "3 hours ago",
+    likes: 5,
+    replies: 2,
+  },
+  {
+    id: "3",
+    author: "Emily Chen",
+    authorInitials: "EC",
+    comment: "Excellent! This will help streamline our workflow.",
+    createdAt: "4 hours ago",
+    likes: 8,
+    replies: 1,
+  },
+];
+
 export const getNoticeById = (id: string): Notice | undefined => {
   return MOCK_NOTICES.find((notice) => notice.id === id);
 };

@@ -3,6 +3,11 @@ import axios from "axios";
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
+export const setTokens = (access: string | null, refresh: string | null) => {
+    accessToken = access;
+    refreshToken = refresh;
+};
+
 
 export const apiClient = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api",
@@ -45,7 +50,7 @@ apiClient.interceptors.response.use(
                 let rToken = refreshToken;
                 let cookieString = '';
 
-              
+
 
                 if (!rToken && typeof window === 'undefined') {
                     throw new Error("No refresh token available");

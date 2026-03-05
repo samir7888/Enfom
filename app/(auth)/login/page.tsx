@@ -16,7 +16,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { useAppMutation } from '@/hooks/useAppMutation';
-import Router from 'next/router';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/contexts/userContext';
+
+
+interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+}
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -26,25 +33,27 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
+  const { login } = useUser()
+  const router = useRouter()
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: 'sameer123@gmail.com',
+      password: 'sameer12345',
     },
   });
- const {mutate} = useAppMutation()
+  const { mutate, isPending } = useAppMutation<LoginValues, AuthResponse>()
   async function onSubmit(data: LoginValues) {
-    console.log('Login data:', data);
     mutate({
-      endpoint:"Auth/login",
-      method:"post",
+      endpoint: "Auth/login",
+      method: "post",
       data,
-      onSuccess:()=>{
-        alert("success")
-        Router.push("/")
-      }      
+      onSuccess: (res) => {
+        login(res.data)
+        router.push("/")
+      }
     })
+
   }
 
   return (
@@ -80,12 +89,7 @@ export default function LoginPage() {
                     <FormLabel>
                       <div className="flex items-center justify-between">
                         <span>Password</span>
-                        <Link
-                          href="/forgot-password"
-                          className="text-sm font-medium text-primary hover:underline"
-                        >
-                          Forgot password?
-                        </Link>
+
                       </div>
                     </FormLabel>
                     <FormControl>
@@ -95,13 +99,19 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Logging in...' : 'Sign in'}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? 'Logging in...' : 'Login in'}
               </Button>
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex flex-col space-y-4 text-center">
+        <CardFooter className="flex mt-4 flex-col space-y-4 text-center">
+          <Link
+            href="/forgot-password"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Forgot password?
+          </Link>
           <div className="text-sm text-muted-foreground">
             Don&apos;t have an account?{' '}
             <Link href="/register" className="text-primary underline-offset-4 hover:underline">

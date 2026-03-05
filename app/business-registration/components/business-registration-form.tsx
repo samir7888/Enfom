@@ -30,6 +30,7 @@ import { BusinessRegistrationFormValues, businessRegistrationSchema } from "./bu
 import { useForm } from "react-hook-form";
 import { COUNTRIES } from "@/CONSTANTS";
 import { useRouter } from "next/navigation";
+import { useAppMutation } from "@/hooks/useAppMutation";
 
 const BUSINESS_TYPES = [
   { value: "retail", label: "Retail" },
@@ -70,14 +71,14 @@ const BUSINESS_SIZES = [
 
 
 export function BusinessRegistrationForm() {
+  const { mutate, isPending } = useAppMutation();
   const router = useRouter();
   const form = useForm<BusinessRegistrationFormValues>({
     resolver: zodResolver(businessRegistrationSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      ownerName: "",
       email: "",
-      phone: "",
+      phoneNumber: "",
       businessName: "",
       businessType: "",
       industry: "",
@@ -98,8 +99,14 @@ export function BusinessRegistrationForm() {
 
 
   function onSubmit(data: BusinessRegistrationFormValues) {
-    console.log("Form submitted:", data);
-    router.push("/business-registration/waiting");
+    mutate({
+      endpoint: "Business/AddBusiness",
+      method: "post",
+      data,
+      onSuccess: () => {
+        router.push("/business-registration/waiting");
+      },
+    });
   }
 
   return (
@@ -131,11 +138,11 @@ export function BusinessRegistrationForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="ownerName"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        First name <span className="text-red-500">*</span>
+                        Owner name <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input placeholder="Enter your first name" {...field} />
@@ -145,21 +152,7 @@ export function BusinessRegistrationForm() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Last name <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter your last name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+               
 
                 <FormField
                   control={form.control}
@@ -183,7 +176,7 @@ export function BusinessRegistrationForm() {
 
                 <FormField
                   control={form.control}
-                  name="phone"
+                  name="phoneNumber"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
@@ -192,7 +185,7 @@ export function BusinessRegistrationForm() {
                       <FormControl>
                         <Input
                           type="tel"
-                          placeholder="Enter your phone number"
+                          placeholder="Enter your phoneNumber number"
                           {...field}
                         />
                       </FormControl>

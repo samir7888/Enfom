@@ -17,13 +17,17 @@ import {
   LayoutGrid,
   Inbox,
   MessageCircle,
+  Form,
+  Settings,
+  SubscriptIcon,
+  DollarSign,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { InboxContent } from "@/components/inbox-content";
 
-const sidebarLinks = [
+const appSidebarLinks = [
   {
     title: "Home",
     url: "/",
@@ -46,8 +50,61 @@ const sidebarLinks = [
   },
 ];
 
+const businessSidebarLinks = [
+  {
+    title: "Business",
+    url: "/",
+    icon: Home,
+  },
+  {
+    title: "Saved",
+    url: "/business/saved",
+    icon: Bookmark,
+  },
+  {
+    title: "CreateForm",
+    url: "/business/formcreate",
+    icon: Form,
+  },
+
+  {
+    title: "Inbox",
+    icon: MessageCircle,
+    isInbox: true,
+  },
+  {
+    title: "Dashboard",
+    url: "/business/dashboard",
+    icon: LayoutGrid,
+  },
+  {
+    title:"Revenue",
+    url:"/business/revenue",
+    icon:DollarSign,
+  },
+  {
+    title: "Billing",
+    url: "/business/billing",
+    icon:SubscriptIcon,
+  },
+  {
+    titile: 'Settings',
+    url: '/business/dashboard/setting',
+    icon:Settings,
+  },
+  {
+    title: "Profile",
+    url: "/business/profile",
+    icon: User,
+  },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
+
+  const isBusiness = pathname.startsWith("/business");
+
+  const sidebarLinks = isBusiness ? businessSidebarLinks : appSidebarLinks;
 
   return (
     <Sidebar
@@ -98,11 +155,10 @@ export function AppSidebar() {
                       >
                         <Link href={item.url || "#"}>
                           <item.icon
-                            className={`size-7 ${
-                              isActive
-                                ? "fill-primary text-primary"
-                                : "text-zinc-500"
-                            }`}
+                            className={`size-7 ${isActive
+                              ? "fill-primary text-primary"
+                              : "text-zinc-500"
+                              }`}
                             strokeWidth={isActive ? 2 : 1.5}
                           />
                         </Link>

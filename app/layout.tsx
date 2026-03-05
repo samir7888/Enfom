@@ -6,6 +6,8 @@ import { AppSidebar } from "./components/sidebar";
 
 import { queryClient } from "@/service/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/sonner";
+import { UserProvider } from "@/contexts/userContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,20 +33,22 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <QueryClientProvider client={queryClient}>
-
-        <SidebarProvider defaultOpen={false}>
-          <div className="flex w-full min-h-screen">
-            <AppSidebar />
-            <main className="flex-1 overflow-x-hidden bg-gray-50 dark:bg-[#09090b]">
-              <div>
-                <SidebarTrigger className="md:hidden mb-4" />
-                {children}
+          <UserProvider>
+            <SidebarProvider defaultOpen={false}>
+              <div className="flex w-full min-h-screen">
+                <AppSidebar />
+                <main className="flex-1 overflow-x-hidden bg-gray-50 dark:bg-[#09090b]">
+                  <div>
+                    <SidebarTrigger className="md:hidden mb-4" />
+                    {children}
+                  </div>
+                </main>
               </div>
-            </main>
-          </div>
-        </SidebarProvider>
+              <Toaster richColors />
+            </SidebarProvider>
+          </UserProvider>
         </QueryClientProvider>
- 
+
       </body>
     </html>
   );

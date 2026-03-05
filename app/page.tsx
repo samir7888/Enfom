@@ -31,6 +31,7 @@ import {
   Bookmark,
   AlertCircle,
   ThumbsUp,
+  LayoutDashboard,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MOCK_NOTICES, Notice } from "@/lib/noticeData";
+import { useUser } from "@/contexts/userContext";
 
 // --- Types ---
 
@@ -157,6 +159,9 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [showAllCategories, setShowAllCategories] = useState(false);
 
+  const { user } = useUser();
+
+
   const filteredForms = MOCK_FORMS.filter((form) => {
     const matchesSearch =
       form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -223,7 +228,7 @@ export default function Home() {
               </Avatar>
               <div className="text-right hidden sm:block">
                 <p className="text-[13px] font-bold text-gray-900 leading-none">
-                  Maneesh Pandey
+                  {user?.FullName || "Guest"}
                 </p>
                 <p className="text-[11px] font-medium text-gray-400 mt-1">
                   @maneeshpandey
@@ -353,7 +358,15 @@ export default function Home() {
             </div>
           </aside>
         </div>
+        {user?.Owner === "Business" && <div className="size-12 absolute flex items-center justify-center  rounded-full bottom-7 right-24 bg-black">
+          <Link href="/business/dashboard">
+            <LayoutDashboard className="text-white" />
+          </Link>
+        </div>}
       </main>
+
+
+
     </div>
   );
 }
@@ -375,8 +388,8 @@ function FormCard({ form }: { form: FormCardData }) {
                 form.status === "ACTIVE"
                   ? "bg-emerald-50 text-emerald-600"
                   : form.status === "PENDING"
-                  ? "bg-amber-50 text-amber-600"
-                  : "bg-gray-100 text-gray-500"
+                    ? "bg-amber-50 text-amber-600"
+                    : "bg-gray-100 text-gray-500"
               )}
             >
               {form.status}

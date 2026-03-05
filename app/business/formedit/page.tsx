@@ -306,7 +306,7 @@ console.log(savedData, 'save')
     if (addFormData?.formTemplate) {
       return addFormData.formTemplate
         .split(",")
-        .map((f) => f.trim())
+        .map((f: any) => f.trim())
         .filter(Boolean);
     }
 

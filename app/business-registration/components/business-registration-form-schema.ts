@@ -4,16 +4,12 @@ const currentYear = new Date().getFullYear();
 
 export const businessRegistrationSchema = z.object({
   // Owner Information
-  firstName: z
+  ownerName: z
     .string()
-    .min(2, "First name must be at least 2 characters")
-    .max(50, "First name must be less than 50 characters"),
-  lastName: z
-    .string()
-    .min(2, "Last name must be at least 2 characters")
-    .max(50, "Last name must be less than 50 characters"),
+    .min(2, "Owner name must be at least 2 characters")
+    .max(50, "Owner name must be less than 50 characters"),
   email: z.string().email("Please enter a valid email address"),
-  phone: z
+  phoneNumber: z
     .string()
     .min(7, "Phone number must be at least 7 digits")
     .regex(/^[+\d\s\-().]+$/, "Please enter a valid phone number"),

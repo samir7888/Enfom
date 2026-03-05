@@ -1,12 +1,13 @@
 "use client";
 import Image from "next/image";
 import React, { useState } from "react";
-import CommentItem from "../../post/commentItem";
-import { mockComments } from "../../post/mockComments";
+import CommentItem from "@/components/comment-item";
+
 import {
   getNoticeById,
   getNoticeTypeColor,
   getPriorityColor,
+  mockComments,
 } from "../../../lib/noticeData";
 import { X, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -90,15 +91,14 @@ const SingleNoticePage = ({ params }: Props) => {
                 <div className="text-center p-8">
                   <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-full flex items-center justify-center shadow-lg">
                     <i
-                      className={`fas fa-bell text-3xl ${
-                        notice.category.toLowerCase() === "security"
+                      className={`fas fa-bell text-3xl ${notice.category.toLowerCase() === "security"
                           ? "text-red-500"
                           : notice.category.toLowerCase() === "maintenance"
-                          ? "text-yellow-500"
-                          : notice.category.toLowerCase() === "feature"
-                          ? "text-blue-500"
-                          : "text-gray-500"
-                      }`}
+                            ? "text-yellow-500"
+                            : notice.category.toLowerCase() === "feature"
+                              ? "text-blue-500"
+                              : "text-gray-500"
+                        }`}
                     ></i>
                   </div>
                   <div className="flex items-center justify-center space-x-2">
@@ -134,11 +134,10 @@ const SingleNoticePage = ({ params }: Props) => {
               <div className="flex items-center space-x-6">
                 <button
                   onClick={() => setIsLiked(!isLiked)}
-                  className={`transition-colors ${
-                    isLiked
+                  className={`transition-colors ${isLiked
                       ? "text-red-500"
                       : "text-gray-900 hover:text-gray-600"
-                  }`}
+                    }`}
                 >
                   <i
                     className={`${isLiked ? "fas" : "far"} fa-heart text-2xl`}
@@ -153,11 +152,10 @@ const SingleNoticePage = ({ params }: Props) => {
               </div>
               <button
                 onClick={() => setIsSaved(!isSaved)}
-                className={`transition-colors ${
-                  isSaved
+                className={`transition-colors ${isSaved
                     ? "text-gray-900"
                     : "text-gray-900 hover:text-gray-600"
-                }`}
+                  }`}
               >
                 <i
                   className={`${isSaved ? "fas" : "far"} fa-bookmark text-2xl`}
@@ -290,15 +288,14 @@ const SingleNoticePage = ({ params }: Props) => {
               <div className="text-center p-8">
                 <div className="w-32 h-32 mx-auto mb-6 bg-white rounded-full flex items-center justify-center shadow-lg">
                   <i
-                    className={`fas fa-bell text-4xl ${
-                      notice.category.toLowerCase() === "security"
+                    className={`fas fa-bell text-4xl ${notice.category.toLowerCase() === "security"
                         ? "text-red-500"
                         : notice.category.toLowerCase() === "maintenance"
-                        ? "text-yellow-500"
-                        : notice.category.toLowerCase() === "feature"
-                        ? "text-blue-500"
-                        : "text-gray-500"
-                    }`}
+                          ? "text-yellow-500"
+                          : notice.category.toLowerCase() === "feature"
+                            ? "text-blue-500"
+                            : "text-gray-500"
+                      }`}
                   ></i>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-800 mb-2">
@@ -426,11 +423,10 @@ const SingleNoticePage = ({ params }: Props) => {
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={() => setIsLiked(!isLiked)}
-                    className={`transition-colors ${
-                      isLiked
+                    className={`transition-colors ${isLiked
                         ? "text-red-500"
                         : "text-gray-700 hover:text-gray-500"
-                    }`}
+                      }`}
                   >
                     <i
                       className={`${isLiked ? "fas" : "far"} fa-heart text-xl`}
@@ -445,11 +441,10 @@ const SingleNoticePage = ({ params }: Props) => {
                 </div>
                 <button
                   onClick={() => setIsSaved(!isSaved)}
-                  className={`transition-colors ${
-                    isSaved
+                  className={`transition-colors ${isSaved
                       ? "text-gray-900"
                       : "text-gray-700 hover:text-gray-500"
-                  }`}
+                    }`}
                 >
                   <i
                     className={`${isSaved ? "fas" : "far"} fa-bookmark text-xl`}
