@@ -359,7 +359,7 @@ export default function Home() {
           </aside>
         </div>
         {user?.Owner === "Business" && <div className="size-12 absolute flex items-center justify-center  rounded-full bottom-7 right-24 bg-black">
-          <Link href="/business/dashboard">
+          <Link href={user.isVerified ? "/enter-pin" : "/create-pin"}>
             <LayoutDashboard className="text-white" />
           </Link>
         </div>}

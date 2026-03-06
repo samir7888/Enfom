@@ -4,6 +4,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useAppMutation } from "@/hooks/useAppMutation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useFetchData } from "@/hooks/useFetchData";
 
 // Types
 interface FormData {
@@ -12,6 +15,30 @@ interface FormData {
   createdBy: string;
   createdAt: string;
   formFilled: string;
+}
+
+interface FormTemplateData {
+  id: string;
+  businessId: string;
+  formImage: string;
+  formName: string;
+  templateFields: string;
+  description: string;
+  isPaid: boolean;
+  price: number;
+  isCashAvailable: boolean;
+  availableSlots: number;
+  isVisible: boolean;
+  isStyle: boolean;
+  needVerfication: boolean;
+  createdAt: string;
+  onlyFlowing: boolean;
+  forAll: boolean;
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
 }
 
 interface FormStyles {
@@ -166,9 +193,8 @@ const Toast: React.FC<{ toast: ToastState; onClose: () => void }> = ({
   return (
     <div className="fixed bottom-6 right-6 z-50 animate-slideUp">
       <div
-        className={`px-5 py-3 rounded-lg shadow-lg text-white font-medium ${
-          toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
-        }`}
+        className={`px-5 py-3 rounded-lg shadow-lg text-white font-medium ${toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
+          }`}
       >
         {toast.message}
       </div>
@@ -291,9 +317,31 @@ const defaultStyles: FormStyles = {
 export default function FormEdit() {
   // Load saved data from localStorage or use defaults
   const savedData = loadFormDataFromAddForm();
-console.log(savedData, 'save')
   // Static Data
-  const [formData] = useState<FormData>( defaultFormData);
+  const [formData] = useState<FormData>(defaultFormData);
+
+  const formId = useSearchParams().get("id");
+
+  const { data, isLoading, error } = useFetchData<ApiResponse<FormTemplateData>>({
+    queryKey: ["formdata", formId!],
+    endpoint: `FormTemplates/GetFormById/${formId}`,
+    options: {
+      enabled: !!formId,
+    }
+  })
+
+  useEffect(() => {
+    if (data?.success && data.data.templateFields) {
+      try {
+        const fields = JSON.parse(data.data.templateFields);
+        if (Array.isArray(fields)) {
+          setFormFields(fields);
+        }
+      } catch (e) {
+        console.error("Error parsing templateFields:", e);
+      }
+    }
+  }, [data]);
 
   const [formFields, setFormFields] = useState<string[]>(() => {
     // First priority: Check for saved form edit data
@@ -504,28 +552,89 @@ console.log(savedData, 'save')
       showToast("Draft saved.");
     }, 800);
   };
+  const router = useRouter()
+  const { mutate, isPending } = useAppMutation()
 
   const publishForm = () => {
-    const config = {
-      id: formData.id,
-      formFor: formData.formFor,
-      fields: formFields,
-      styles: JSON.parse(JSON.stringify(styles)),
-      createdAt: formData.createdAt,
-      publishedAt: new Date().toISOString(),
+    // Construct the fields array in the new format
+    const fields: any[] = [
+      {
+        name: "title",
+        label: data?.data?.formName || formData.formFor,
+        type: "display",
+        styles: {
+          background: styles.main.backgroundColor,
+          color: styles.titleColor.textColor,
+          border: `1px solid ${styles.entry.borderColor}`,
+          borderRadius: `${styles.main.borderRadius}px`,
+          padding: "15px",
+          fontSize: `${styles.titleColor.fontSize}px`,
+          fontWeight: styles.titleColor.fontWeight,
+          textAlign: styles.titleColor.textAlign,
+          marginBottom: "20px",
+          display: "block",
+        },
+      },
+      ...formFields.map((field) => ({
+        name: field.toLowerCase().replace(/\s+/g, "_"),
+        label: field,
+        type: isImageField(field) ? "image" : getInputType(field),
+        placeholder: `Enter ${field.toLowerCase()}`,
+        required: true,
+        styles: {
+          background: styles.entry.backgroundColor,
+          color: styles.entry.textColor,
+          border: `${styles.entry.borderWidth}px solid ${styles.entry.borderColor}`,
+          borderRadius: `${styles.entry.borderRadius}px`,
+          padding: "12px",
+          width: "100%",
+          outline: "none",
+          fontSize: `${styles.entry.fontSize}px`,
+        },
+        ...(isImageField(field) ? {
+          accept: "image/*",
+          maxSizeMB: 2,
+          hint: "JPG, PNG or WEBP — max 2MB",
+          icon: "🖼️"
+        } : {})
+      })),
+      {
+        name: "Button",
+        label: "Submit",
+        type: "button",
+        styles: {
+          background: styles.button.backgroundColor,
+          color: styles.button.textColor,
+          border: `1px solid ${styles.button.backgroundColor}`,
+          borderRadius: "8px",
+          padding: `${styles.button.padding}px`,
+          width: "100%",
+          cursor: "pointer",
+          fontSize: `${styles.button.fontSize}px`,
+          fontWeight: styles.button.fontWeight,
+          marginTop: "8px",
+        },
+      },
+    ];
+
+    const postData = {
+      FormTemplateId: formId,
+      DesignJson: JSON.stringify({
+        version: "1.0",
+        formTitle: data?.data?.formName || formData.formFor,
+        fields: fields,
+      }),
     };
-    const blob = new Blob([JSON.stringify(config, null, 2)], {
-      type: "application/json",
+
+    mutate({
+      endpoint: "FormDesign",
+      method: "post",
+      data: postData,
+      onSuccess: (res: any) => {
+        router.push("/");
+      },
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `form-config-${formData.id}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast("Form published and downloaded!");
+    showToast("Form published successfully!");
   };
 
   // Update style helper
@@ -597,10 +706,11 @@ console.log(savedData, 'save')
               Save Draft
             </button>
             <button
+              disabled={isPending}
               onClick={publishForm}
               className="px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
             >
-              Publish Form
+              {isPending ? "Publishing..." : "Publish Form"}
             </button>
           </div>
         </div>
@@ -630,11 +740,10 @@ console.log(savedData, 'save')
               <button
                 key={comp.key}
                 onClick={() => setCurrentComponent(comp.key)}
-                className={`w-full p-3 flex items-center gap-3 border rounded-lg transition-all ${
-                  currentComponent === comp.key
-                    ? "border-2 border-gray-900 bg-white"
-                    : "border-gray-200 hover:border-teal-600 hover:bg-gray-50"
-                }`}
+                className={`w-full p-3 flex items-center gap-3 border rounded-lg transition-all ${currentComponent === comp.key
+                  ? "border-2 border-gray-900 bg-white"
+                  : "border-gray-200 hover:border-teal-600 hover:bg-gray-50"
+                  }`}
               >
                 <span className="text-xl">{comp.icon}</span>
                 <span className="text-sm font-medium text-gray-700">
@@ -658,7 +767,6 @@ console.log(savedData, 'save')
               borderRadius: styles.main.borderRadius,
             }}
           >
-            {/* Form Title */}
             <h2
               className="mb-6"
               style={{
@@ -670,7 +778,7 @@ console.log(savedData, 'save')
                   .textAlign as React.CSSProperties["textAlign"],
               }}
             >
-              {formData.formFor}
+              {isLoading ? "Loading..." : (data?.data?.formName || formData.formFor)}
             </h2>
 
             {/* Form Fields */}
@@ -719,8 +827,8 @@ console.log(savedData, 'save')
                             color: ${styles.entry.placeholderColor};
                             opacity: ${styles.entry.placeholderDisplay ===
                             "visible"
-                              ? 1
-                              : 0};
+                            ? 1
+                            : 0};
                           }
                         `}</style>
                       </>
@@ -1032,11 +1140,10 @@ console.log(savedData, 'save')
                         onClick={() =>
                           updateStyle("titleColor", "textAlign", align.value)
                         }
-                        className={`flex-1 px-3 py-2 border rounded-md text-sm transition-colors ${
-                          styles.titleColor.textAlign === align.value
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        }`}
+                        className={`flex-1 px-3 py-2 border rounded-md text-sm transition-colors ${styles.titleColor.textAlign === align.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          }`}
                       >
                         {align.icon}
                       </button>
@@ -1173,11 +1280,10 @@ console.log(savedData, 'save')
                         onClick={() =>
                           updateStyle("entry", "backgroundColor", color)
                         }
-                        className={`w-7 h-7 rounded-full transition-all ${
-                          styles.entry.backgroundColor === color
-                            ? "ring-2 ring-offset-2 ring-gray-900"
-                            : ""
-                        }`}
+                        className={`w-7 h-7 rounded-full transition-all ${styles.entry.backgroundColor === color
+                          ? "ring-2 ring-offset-2 ring-gray-900"
+                          : ""
+                          }`}
                         style={{ backgroundColor: color }}
                       />
                     ))}
@@ -1477,11 +1583,10 @@ console.log(savedData, 'save')
                         onClick={() =>
                           updateStyle("button", "alignment", align.value)
                         }
-                        className={`flex-1 px-3 py-2 border rounded-md text-sm transition-colors ${
-                          styles.button.alignment === align.value
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        }`}
+                        className={`flex-1 px-3 py-2 border rounded-md text-sm transition-colors ${styles.button.alignment === align.value
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                          }`}
                       >
                         {align.icon}
                       </button>

@@ -47,18 +47,17 @@ apiClient.interceptors.response.use(
         if (error.response && error.response.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
             try {
-                let rToken = refreshToken;
-                let cookieString = '';
+                const rToken = refreshToken || (typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null);
 
-
-
-                if (!rToken && typeof window === 'undefined') {
+                if (!rToken) {
                     throw new Error("No refresh token available");
                 }
 
+                const cookieString = '';
+
                 // Use a separate axios instance or a direct call to avoid interceptor loop if needed
-                const response = await axios.post(`${apiClient.defaults.baseURL}/auth/refresh-token`,
-                    { refreshToken: rToken },
+                const response = await axios.post(`${apiClient.defaults.baseURL}/Auth/refresh-token`,
+                    { expiryToken: rToken },
                     {
                         withCredentials: true,
                         headers: typeof window === 'undefined' ? { Cookie: cookieString } : {}
@@ -66,12 +65,11 @@ apiClient.interceptors.response.use(
                 );
 
                 const { access_token, refresh_token } = response.data;
+                localStorage.setItem('access_token', access_token);
+                localStorage.setItem('refresh_token', refresh_token);
 
-                // Update local tokens
-
-                // We still need a way to tell the AuthProvider to update its state.
-                // This is usually done via a callback or by having AuthProvider listen to events.
-                // For now, let's just update the header and retry.
+                // Update local tokens so the request interceptor uses the new one
+                setTokens(access_token, refresh_token);
 
                 originalRequest.headers.Authorization = `Bearer ${access_token}`;
                 return apiClient(originalRequest);

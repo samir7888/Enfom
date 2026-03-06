@@ -12,6 +12,7 @@ interface UserData {
     FullName: string;
     Owner: string; // This represents the Role based on the example provided
     exp: number;
+    isVerified: boolean;
     iss: string;
     aud: string;
 }
@@ -30,7 +31,9 @@ interface UserContextType {
     refreshToken: string | null;
     login: (tokens: AuthResponse) => void;
     logout: () => void;
-    isLoading: boolean;
+    isVerified: boolean;
+    setIsVerified: (isVerified: boolean) => void;
+    isLoading: boolean; 
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -64,7 +67,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [refreshToken, setRefreshToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-
+    const [isVerified, setIsVerified] = useState(false);
     // Relying solely on state variables for token management.
     // Note: This will reset the session on page refresh.
     useEffect(() => {
@@ -117,7 +120,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <UserContext.Provider value={{ user, accessToken, refreshToken, login, logout, isLoading }}>
+        <UserContext.Provider value={{ user, accessToken, refreshToken,isVerified,setIsVerified, login, logout, isLoading }}>
             {children}
         </UserContext.Provider>
     );

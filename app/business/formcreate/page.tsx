@@ -8,6 +8,7 @@ import {
   ChevronDown, Circle, Clock, CheckCircle2, AlertCircle,
   X, Tag, User, Flag, CalendarDays, Share2
 } from "lucide-react";
+import Link from "next/link";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -291,78 +292,7 @@ function FormCard({
   );
 }
 
-// ─── New Card Modal ───────────────────────────────────────────────────────────
 
-function NewCardModal({ onClose, onCreate }: {
-  onClose: () => void;
-  onCreate: (card: CardData) => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
-  const [priority, setPriority] = useState<Priority>("Medium");
-  const [due, setDue] = useState("");
-
-  const handleCreate = () => {
-    if (!title.trim()) return;
-    onCreate({
-      id: `c${Date.now()}`,
-      tag: "FORM",
-      tagNum: Math.floor(Math.random() * 100) + 1,
-      priority,
-      title: title.trim(),
-      subtitle: subtitle.trim() || "Form Description",
-      comments: 0,
-      attachments: 0,
-      avatars: [],
-      due: due || "TBD",
-    });
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Create New Form</h3>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors">
-            <X size={14} className="text-slate-500" />
-          </button>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Form Title *</label>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Customer Satisfaction Survey"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-semibold" />
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Description</label>
-            <input value={subtitle} onChange={e => setSubtitle(e.target.value)} placeholder="Brief description of the form"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Priority Level</label>
-              <select value={priority} onChange={e => setPriority(e.target.value as Priority)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all">
-                {(["Urgent", "High", "Medium", "Low"] as Priority[]).map(p => <option key={p}>{p}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Due Date</label>
-              <input value={due} onChange={e => setDue(e.target.value)} placeholder="March 01, 25"
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all" />
-            </div>
-          </div>
-        </div>
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-          <button onClick={handleCreate} className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 active:scale-95 transition-all shadow-sm shadow-blue-200">Create</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -370,7 +300,6 @@ export default function FormDashboard() {
   const [cards, setCards] = useState<CardData[]>(INITIAL_CARDS);
   const [viewing, setViewing] = useState<CardData | null>(null);
   const [editing, setEditing] = useState<CardData | null>(null);
-  const [showNewModal, setShowNewModal] = useState(false);
 
   const handleSaveEdit = (updated: CardData) => {
     setCards(prev => prev.map(c => c.id === updated.id ? updated : c));
@@ -391,12 +320,11 @@ export default function FormDashboard() {
           <p className="text-xs text-slate-400 font-semibold mt-0.5">Manage and organize your business forms</p>
         </div>
 
-        <button
-          onClick={() => setShowNewModal(true)}
+        <Link href="/business/addform"
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all active:scale-95 shadow-lg shadow-blue-200"
         >
           <Plus size={16} strokeWidth={3} /> Create New
-        </button>
+        </Link>
       </div>
 
       {/* ── Grid Layout ── */}
@@ -413,15 +341,14 @@ export default function FormDashboard() {
             ))}
 
             {/* Empty state / placeholder for adding more */}
-            <button
-              onClick={() => setShowNewModal(true)}
+            <Link href="/business/addform"
               className="h-full min-h-[220px] rounded-2xl border-2 border-dashed border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all flex flex-col items-center justify-center gap-3 group"
             >
               <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-blue-100 flex items-center justify-center transition-colors">
                 <Plus size={20} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
               </div>
               <span className="text-sm font-bold text-slate-400 group-hover:text-blue-600 transition-colors">Add New Form</span>
-            </button>
+            </Link>
           </div>
         </div>
       </main>
@@ -441,12 +368,7 @@ export default function FormDashboard() {
           onSave={handleSaveEdit}
         />
       )}
-      {showNewModal && (
-        <NewCardModal
-          onClose={() => setShowNewModal(false)}
-          onCreate={handleCreate}
-        />
-      )}
+     
     </div>
   );
 }

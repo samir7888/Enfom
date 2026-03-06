@@ -21,11 +21,13 @@ import {
   Settings,
   SubscriptIcon,
   DollarSign,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { InboxContent } from "@/components/inbox-content";
+import { useUser } from "@/contexts/userContext";
 
 const appSidebarLinks = [
   {
@@ -78,32 +80,37 @@ const businessSidebarLinks = [
     icon: LayoutGrid,
   },
   {
-    title:"Revenue",
-    url:"/business/revenue",
-    icon:DollarSign,
+    title: "Revenue",
+    url: "/business/revenue",
+    icon: DollarSign,
   },
   {
     title: "Billing",
     url: "/business/billing",
-    icon:SubscriptIcon,
+    icon: SubscriptIcon,
   },
   {
     titile: 'Settings',
     url: '/business/dashboard/setting',
-    icon:Settings,
+    icon: Settings,
   },
   {
     title: "Profile",
-    url: "/business/profile",
+    url: "/profile",
     icon: User,
   },
 ];
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { user, isLoading } = useUser();
 
-  const isBusiness = pathname.startsWith("/business");
+  if(isLoading || !user)
+  {
+    return <span className="flex items-center justify-center animate-spin"><Loader2 /></span>
+  }
 
+  const isBusiness = user?.Owner === 'Business' && user.isVerified;
   const sidebarLinks = isBusiness ? businessSidebarLinks : appSidebarLinks;
 
   return (

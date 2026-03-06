@@ -5,6 +5,8 @@ import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useFormState } from "react-dom";
+import { useAppMutation } from "@/hooks/useAppMutation";
+import { useRouter } from "next/navigation";
 
 // Types
 interface FormState {
@@ -341,6 +343,67 @@ export default function FormCreate() {
     }
   };
 
+  const router = useRouter();
+  const { mutate, isPending } = useAppMutation();
+
+  const handlePublishForm = () => {
+    // Combine text fields from template and names from image fields
+    const allFields = [
+      ...templateFields,
+      ...formState.imageFields.map((field) => field.name),
+    ];
+
+    const config = {
+      id: currentForm.id,
+      formName: formState.formName,
+      description: formState.formDescription,
+      templateFields: JSON.stringify(allFields),
+      createdAt: currentForm.createdAt.toISOString(),
+      publishedAt: new Date().toISOString(),
+    };
+
+    const response = mutate({
+      endpoint: "FormTemplates/CreateForm",
+      method: "post",
+      data: config,
+      onSuccess: (res: any) => {
+        router.push("/business/createform");
+      },
+      onError: (err) => {
+        console.log(err);
+      }
+    });
+  };
+  const handleEditForm = () => {
+    // Combine text fields from template and names from image fields
+    const allFields = [
+      ...templateFields,
+      ...formState.imageFields.map((field) => field.name),
+    ];
+
+    const config = {
+      id: currentForm.id,
+      formName: formState.formName,
+      description: formState.formDescription,
+      templateFields: JSON.stringify(allFields),
+      createdAt: currentForm.createdAt.toISOString(),
+      publishedAt: new Date().toISOString(),
+    };
+
+    const response = mutate({
+      endpoint: "FormTemplates/CreateForm",
+      method: "post",
+      data: config,
+      onSuccess: (res: any) => {
+        console.log(res.data.id,'id');
+        router.push("/business/formedit?id=" + res.data.id);
+      },
+      onError: (err) => {
+        console.log(err);
+      }
+    });
+  };
+
   const formatCardNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\s/g, "");
     const formatted = value.match(/.{1,4}/g)?.join(" ") || value;
@@ -428,14 +491,18 @@ export default function FormCreate() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href={"/formedit"}
+          <button
+            onClick={handleEditForm}
             className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
           >
-            Edit Draft
-          </Link>
-          <button className="px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors">
-            Publish Form
+            Edit Form
+          </button>
+          <button
+            disabled={isPending}
+            onClick={handlePublishForm}
+            className="px-4 py-1.5 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition-colors"
+          >
+            {isPending ? "Publishing..." : "Publish Form"}
           </button>
         </div>
       </nav>
@@ -447,11 +514,10 @@ export default function FormCreate() {
           {/* Tab Navigation */}
           <div className="flex border-b border-gray-200 bg-gray-50">
             <button
-              className={`flex-1 px-5 py-4 text-sm font-medium transition-all relative ${
-                activeTab === "general"
-                  ? "text-blue-600 bg-white"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              }`}
+              className={`flex-1 px-5 py-4 text-sm font-medium transition-all relative ${activeTab === "general"
+                ? "text-blue-600 bg-white"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                }`}
               onClick={() => setActiveTab("general")}
             >
               General Details
@@ -460,11 +526,10 @@ export default function FormCreate() {
               )}
             </button>
             <button
-              className={`flex-1 px-5 py-4 text-sm font-medium transition-all relative ${
-                activeTab === "engine"
-                  ? "text-blue-600 bg-white"
-                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              }`}
+              className={`flex-1 px-5 py-4 text-sm font-medium transition-all relative ${activeTab === "engine"
+                ? "text-blue-600 bg-white"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                }`}
               onClick={() => setActiveTab("engine")}
             >
               Form Engine
@@ -754,11 +819,10 @@ export default function FormCreate() {
                       }}
                       onDragLeave={() => setIsDragOver(false)}
                       onDrop={onDrop}
-                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${
-                        isDragOver
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 bg-gray-50 hover:border-blue-500 hover:bg-blue-50"
-                      }`}
+                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all ${isDragOver
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 bg-gray-50 hover:border-blue-500 hover:bg-blue-50"
+                        }`}
                     >
                       <div className="text-5xl mb-3 text-gray-400">📁</div>
                       <div className="text-sm text-gray-600 mb-1">
@@ -1073,29 +1137,25 @@ const ToggleItem: React.FC<{
 }> = ({ label, checked, onChange, highlight }) => {
   return (
     <div
-      className={`flex items-center justify-between py-3 ${
-        highlight
-          ? "bg-amber-50 px-3 rounded-lg"
-          : "border-b border-gray-100 last:border-0"
-      }`}
+      className={`flex items-center justify-between py-3 ${highlight
+        ? "bg-amber-50 px-3 rounded-lg"
+        : "border-b border-gray-100 last:border-0"
+        }`}
     >
       <span
-        className={`text-sm ${
-          highlight ? "font-semibold text-amber-800" : "text-gray-700"
-        }`}
+        className={`text-sm ${highlight ? "font-semibold text-amber-800" : "text-gray-700"
+          }`}
       >
         {label}
       </span>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative w-11 h-6 rounded-full transition-colors ${
-          checked ? "bg-blue-600" : "bg-gray-300"
-        }`}
+        className={`relative w-11 h-6 rounded-full transition-colors ${checked ? "bg-blue-600" : "bg-gray-300"
+          }`}
       >
         <span
-          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${
-            checked ? "transform translate-x-5" : ""
-          }`}
+          className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${checked ? "transform translate-x-5" : ""
+            }`}
         />
       </button>
     </div>
