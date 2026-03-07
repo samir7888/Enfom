@@ -32,6 +32,7 @@ import {
   AlertCircle,
   ThumbsUp,
   LayoutDashboard,
+  File,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -47,36 +48,42 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
+
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { MOCK_NOTICES, Notice } from "@/lib/noticeData";
 import { useUser } from "@/contexts/userContext";
+import { useFetchData } from "@/hooks/useFetchData";
 
 // --- Types ---
 
 interface FormCardData {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  responses: number;
-  views: string;
-  author: string;
-  subAuthor: string;
+  formId: string;
+  formName: string;
+  description: string | null;
+  price: number;
   createdAt: string;
-  priority: "High" | "Medium" | "Low";
-  status: "ACTIVE" | "PENDING" | "EXPIRED";
+  business: {
+    businessId: string;
+    businessName: string;
+    businessType: string;
+    logo: string;
+    bio: string;
+  };
+  // UI related / default values
+  responses?: number;
+  views?: string;
+  isVisible?: boolean;
+  isStyle?: boolean;
 }
 
 // --- Mock Data ---
 
 const FORM_CATEGORIES = [
   "All Forms",
+  "Saas",
   "Business",
   "Education",
   "Healthcare",
@@ -96,59 +103,9 @@ const FORM_CATEGORIES = [
   "Application",
 ];
 
-const NOTICE_CATEGORIES = [
-  "All Notices",
-  "Urgent",
-  "Events",
-  "Updates",
-  "Internal",
-  "External",
-];
 
-const MOCK_FORMS: FormCardData[] = [
-  {
-    id: "f1",
-    title: "Q1 Marketing Campaign Proposal Request",
-    category: "Marketing",
-    description:
-      "Seeking creative agencies to submit comprehensive digital marketing strategy...",
-    responses: 8,
-    views: "55.6k",
-    author: "Nixtio",
-    subAuthor: "School",
-    createdAt: "Dec 28",
-    priority: "High",
-    status: "ACTIVE",
-  },
-  {
-    id: "f2",
-    title: "Vendor Partnership Evaluation Form",
-    category: "Operations",
-    description:
-      "Complete the vendor assessment questionnaire for potential logistics...",
-    responses: 3,
-    views: "55.6k",
-    author: "Nixtio",
-    subAuthor: "School",
-    createdAt: "Jan 05",
-    priority: "Medium",
-    status: "PENDING",
-  },
-  {
-    id: "f3",
-    title: "Sales Pipeline Review - Q4 Analysis",
-    category: "Sales",
-    description:
-      "Team members submit weekly pipeline updates with deal status, blockers, and...",
-    responses: 12,
-    views: "55.6k",
-    author: "Nixtio",
-    subAuthor: "School",
-    createdAt: "Dec 30",
-    priority: "High",
-    status: "ACTIVE",
-  },
-];
+
+const MOCK_FORMS: FormCardData[] = [];
 
 // --- Main Component ---
 
@@ -158,19 +115,29 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("All Forms");
   const [statusFilter, setStatusFilter] = useState("All");
   const [showAllCategories, setShowAllCategories] = useState(false);
-
+  const { data, isLoading } = useFetchData<FormCardData[]>(
+    {
+      queryKey: ["forms"],
+      endpoint: "FormTemplates/public",
+    }
+  );
   const { user } = useUser();
 
 
-  const filteredForms = MOCK_FORMS.filter((form) => {
+  const formsToFilter = data || MOCK_FORMS;
+
+  const filteredForms = formsToFilter.filter((form) => {
+    const title = form.formName || "";
+    const description = form.description || "";
+    const category = form.business?.businessType || "";
+
     const matchesSearch =
-      form.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      form.description.toLowerCase().includes(searchQuery.toLowerCase());
+      title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
-      selectedCategory === "All Forms" || form.category === selectedCategory;
+      selectedCategory === "All Forms" || category === selectedCategory;
     const matchesStatus =
-      statusFilter === "All" ||
-      form.status.toLowerCase() === statusFilter.toLowerCase();
+      statusFilter === "All" || isNewOrActive(new Date(form.createdAt)) === statusFilter;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -193,7 +160,7 @@ export default function Home() {
           </div>
 
           <div className="hidden lg:flex items-center gap-1 bg-gray-50/80 p-1 rounded-xl border border-gray-100/50">
-            {["All", "Pending", "Active"].map((status) => (
+            {["All", "New", "Active"].map((status) => (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -271,10 +238,16 @@ export default function Home() {
               </Tabs>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {activeTab === "form" ? (
-                filteredForms.map((form) => (
-                  <FormCard key={form.id} form={form} />
-                ))
+              {isLoading ? (
+                <div className="col-span-full py-12 text-center text-gray-400">Loading forms...</div>
+              ) : activeTab === "form" ? (
+                filteredForms.length > 0 ? (
+                  filteredForms.map((form) => (
+                    <FormCard key={form.formId} form={form} />
+                  ))
+                ) : (
+                  <div className="col-span-full py-12 text-center text-gray-400">No forms found.</div>
+                )
               ) : (
                 <div className="col-span-full space-y-6">
                   {MOCK_NOTICES.map((notice) => (
@@ -379,50 +352,57 @@ function FormCard({ form }: { form: FormCardData }) {
       <CardHeader className="p-6 pb-2">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-medium text-gray-400">
-              {form.category}
+            <span className="text-[15px] font-medium uppercase tracking-wider text-gray-400">
+              {form.business?.businessType}
             </span>
-            <Badge
-              className={cn(
-                "rounded-lg px-2 py-0.5 text-[10px] font-bold border-none",
-                form.status === "ACTIVE"
-                  ? "bg-emerald-50 text-emerald-600"
-                  : form.status === "PENDING"
-                    ? "bg-amber-50 text-amber-600"
-                    : "bg-gray-100 text-gray-500"
-              )}
-            >
-              {form.status}
-            </Badge>
+
+            {/* {form.isVisible ? (
+              <Badge variant="outline" className="text-emerald-600 border-emerald-100">
+                Active
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-red-600 border-red-100">
+                Inactive
+              </Badge>
+            )} */}
+
+
+            {isNewOrActive(new Date(form.createdAt)) === "New" ? (
+              <Badge variant="outline" className="text-emerald-600 bg-green-100 border-emerald-100">
+                New
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-yellow-600 bg-yellow-100 border-yellow-100">
+                Active
+              </Badge>
+            )}
+
           </div>
+          {form.price > 0 && (
+            <Badge variant="outline" className="text-emerald-600 border-emerald-100">
+              ${form.price}
+            </Badge>
+          )}
         </div>
-        <h3 className="text-[17px] font-bold text-[#111827] leading-snug">
-          {form.title}
+        <h3 className="text-[17px] font-bold text-[#111827] leading-snug line-clamp-1">
+          {form.formName}
         </h3>
       </CardHeader>
 
       <CardContent className="px-6 pt-2">
-        <p className="text-gray-500 text-[14px] leading-relaxed line-clamp-2 mb-5">
-          {form.description}
+        <p className="text-gray-500 text-[14px] leading-relaxed line-clamp-2 mb-5 min-h-[40px]">
+          {form.description || "No description available."}
         </p>
 
         <div className="flex items-center gap-4 text-gray-400 mb-6">
           <div className="flex items-center gap-1.5 text-xs font-medium">
             <Calendar size={14} className="text-gray-300" />
-            {form.createdAt}
+            {new Date(form.createdAt).toLocaleDateString()}
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-medium">
-            <div
-              className={cn(
-                "w-2 h-2 rounded-full",
-                form.priority === "High" ? "bg-red-500" : "bg-amber-500"
-              )}
-            />
-            {form.priority}
-          </div>
+
           <div className="flex items-center gap-1.5 text-xs font-medium">
             <MessageSquare size={14} className="text-gray-300" />
-            {form.responses}
+            {form.responses || 0}
           </div>
         </div>
 
@@ -446,14 +426,14 @@ function FormCard({ form }: { form: FormCardData }) {
                 </p>
               </div>
             </SheetContent>
-          </Sheet>
+          </Sheet>  
 
-          <Button
-            variant="secondary"
-            className="h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl flex-1 border-none"
+          <Link href={`/form/${form.formId}?isStyle=${form.isStyle}`}
+            className="flex items-center justify-center h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 gap-2 font-bold rounded-xl flex-1 border-none"
           >
+            <File size={16} />
             Fill Form
-          </Button>
+          </Link>
 
           <Button
             variant="ghost"
@@ -465,27 +445,26 @@ function FormCard({ form }: { form: FormCardData }) {
         </div>
       </CardContent>
 
-      <CardFooter className="px-6 mb-3  bg-white border-t border-gray-50 flex items-center justify-between">
+      <CardFooter className="px-6 mb-3 bg-white border-t border-gray-50 flex items-center justify-between pt-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-white font-bold text-xs">
-            {form.author.charAt(0)}
+          <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center text-white font-bold text-xs overflow-hidden">
+            {form.business?.logo ? (
+              <img src={form.business.logo} alt={form.business.businessName} className="w-full h-full object-cover" />
+            ) : (
+              (form.business?.businessName || "E").charAt(0)
+            )}
           </div>
           <div>
             <p className="text-[13px] font-bold text-gray-900 leading-none mb-0.5">
-              {form.author}
+              {form.business?.businessName || "System"}
             </p>
             <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
-              {form.subAuthor}
+              {form.business?.businessType || "Business"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-[14px] font-semibold text-gray-900">👍</span>
-          <span className="text-[13px] font-bold text-gray-400 italic">
-            {form.views}
-          </span>
-        </div>
+
       </CardFooter>
     </Card>
   );
@@ -641,4 +620,14 @@ function NoticeItem({ notice }: { notice: Notice }) {
       </Card>
     </Link>
   );
+}
+
+
+
+const isNewOrActive = (data: Date) => {
+  const diff = Date.now() - data.getTime();
+  const oneDayInMs = 24 * 60 * 60 * 1000;
+  return diff <= oneDayInMs ? "New" : "Active";
+
+
 }

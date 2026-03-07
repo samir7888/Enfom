@@ -2,124 +2,113 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    Table,
     TrendingUp,
     FileText,
     Users,
     Search,
     Download,
     Filter,
-    ArrowUpRight,
-    ArrowDownRight,
-    MessageCircle,
-    Copy,
     Share2,
     Calendar,
-    Image as ImageIcon
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { DataTable } from '@/app/business/components/data-table';
 import { cn } from "@/lib/utils";
+import { useFetchData } from '@/hooks/useFetchData';
+import { useParams } from 'next/navigation';
 
-// Mock data for form responses
-const MOCK_DATA = [
-    {
-        id: "101",
-        full_name: "Rahul Sharma",
-        email: "rahul@example.com",
-        age: 24,
-        country: "India",
-        status: "Completed",
-        submitted_at: "2024-05-12 10:30 AM",
-        profile_photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1976&auto=format&fit=crop",
-    },
-    {
-        id: "102",
-        full_name: "John Doe",
-        email: "john@example.com",
-        age: 32,
-        country: "USA",
-        status: "Pending",
-        submitted_at: "2024-05-12 11:15 AM",
-        profile_photo: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=2080&auto=format&fit=crop",
-    },
-    {
-        id: "103",
-        full_name: "Sophia Martinez",
-        email: "sophia@example.com",
-        age: 28,
-        country: "Mexico",
-        status: "Completed",
-        submitted_at: "2024-05-13 09:45 AM",
-        profile_photo: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=1974&auto=format&fit=crop",
-    },
-    {
-        id: "104",
-        full_name: "Liam O'Connor",
-        email: "liam@example.com",
-        age: 26,
-        country: "Ireland",
-        status: "In Review",
-        submitted_at: "2024-05-14 02:20 PM",
-        profile_photo: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=2080&auto=format&fit=crop",
-    },
-    {
-        id: "105",
-        full_name: "Emma Wilson",
-        email: "emma@example.com",
-        age: 22,
-        country: "UK",
-        status: "Completed",
-        submitted_at: "2024-05-15 04:10 PM",
-        profile_photo: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
-    },
-];
+// Define types based on the API response structure
+interface FormSubmission {
+    id: string;
+    formTemplateId: string;
+    userId: string;
+    formData: string; // JSON string
+    status: string;
+    isPaid: boolean;
+    paymentMethod: string;
+    paidAmount: number;
+    submittedAt: string;
+    [key: string]: any;
+}
 
-const COLUMNS = [
-    { header: "Profile", accessorKey: "profile_photo", type: "image" as const },
-    { header: "Full Name", accessorKey: "full_name", type: "text" as const },
-    { header: "Email", accessorKey: "email", type: "text" as const },
-    { header: "Age", accessorKey: "age", type: "number" as const },
-    { header: "Country", accessorKey: "country", type: "text" as const },
-    { header: "Status", accessorKey: "status", type: "badge" as const },
-    { header: "Submitted At", accessorKey: "submitted_at", type: "date" as const },
-];
+interface Column {
+    header: string;
+    accessorKey: string;
+    type?: 'text' | 'image' | 'date' | 'badge' | 'number';
+}
 
 export default function FormResponsePage() {
+    const params = useParams();
+    const resolvedId = (params?.id as string) || "";
+
     const [responses, setResponses] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [columns, setColumns] = useState<Column[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const { data, isLoading, error } = useFetchData<any>({
+        queryKey: ["formResponse", resolvedId],
+        endpoint: `FormSubmission/GetFormData/${resolvedId}`,
+        options: {
+            enabled: !!resolvedId
+        }
+    });
+
     useEffect(() => {
-        // Simulate fetching data
-        const fetchData = async () => {
-            setIsLoading(true);
+        const rawData = data?.data || data;
+        if (rawData && Array.isArray(rawData) && rawData.length > 0) {
+            // Process responses: Parse formData JSON
+            const processed = rawData.map((item: FormSubmission) => {
+                let parsedData = {};
+                try {
+                    parsedData = JSON.parse(item.formData);
+                } catch (e) {
+                    console.error("Error parsing formData:", e);
+                }
+                return {
+                    ...item,
+                    ...parsedData,
+                    submittedAt: new Date(item.submittedAt).toLocaleString()
+                };
+            });
+            setResponses(processed);
+
+            // Generate Columns dynamically from the first item's formData
             try {
-                // Here you would normally call your API:
-                // const res = await apiClient.get('/form-responses/1');
-                // setResponses(res.data);
+                const firstItemParsed = JSON.parse(rawData[0].formData);
+                const dynamicCols: Column[] = Object.keys(firstItemParsed).map(key => ({
+                    header: key.charAt(0).toUpperCase() + key.slice(1),
+                    accessorKey: key,
+                    type: isNaN(Number(firstItemParsed[key])) ? 'text' : 'number'
+                }));
 
-                // For now, using mock data
-                await new Promise(resolve => setTimeout(resolve, 800));
-                setResponses(MOCK_DATA);
-            } catch (error) {
-                console.error("Failed to fetch form responses", error);
-            } finally {
-                setIsLoading(false);
+                const finalColumns: Column[] = [
+                    ...dynamicCols,
+                    { header: "Status", accessorKey: "status", type: "badge" },
+                    { header: "Submitted At", accessorKey: "submittedAt", type: "text" },
+                ];
+                setColumns(finalColumns);
+            } catch (e) {
+                console.error("Error generating columns:", e);
+                // Fallback columns
+                setColumns([
+                    { header: "Status", accessorKey: "status", type: "badge" },
+                    { header: "Submitted At", accessorKey: "submittedAt", type: "text" },
+                ]);
             }
-        };
+        }
+    }, [data]);
 
-        fetchData();
-    }, []);
 
-    const filteredResponses = responses.filter(resp =>
-        resp.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        resp.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        resp.status?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredResponses = responses.filter(resp => {
+        const searchStr = searchQuery.toLowerCase();
+        // Search through all properties including dynamic ones from formData
+        return Object.values(resp).some(val =>
+            String(val).toLowerCase().includes(searchStr)
+        );
+    });
 
     const handleEdit = (item: any) => {
         console.log("✏️ Editing response:", item.id);
@@ -127,7 +116,7 @@ export default function FormResponsePage() {
     };
 
     const handleDelete = (item: any) => {
-        if (confirm(`Are you sure you want to delete response from ${item.full_name}?`)) {
+        if (confirm(`Are you sure you want to delete this response?`)) {
             setResponses(prev => prev.filter(r => r.id !== item.id));
         }
     };
@@ -197,12 +186,12 @@ export default function FormResponsePage() {
                     <div className="flex items-center gap-2">
                         <div className="flex -space-x-3 overflow-hidden p-1 mr-2">
                             {responses.slice(0, 4).map((r, i) => (
-                                <img
+                                <div
                                     key={i}
-                                    className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-zinc-950 object-cover"
-                                    src={r.profile_photo}
-                                    alt="User"
-                                />
+                                    className="h-8 w-8 rounded-full ring-2 ring-white dark:ring-zinc-950 bg-indigo-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-indigo-600 dark:text-indigo-400"
+                                >
+                                    {(r.Name || "U")[0]}
+                                </div>
                             ))}
                         </div>
                         <Button variant="ghost" size="sm" className="rounded-xl h-10 px-4 border border-zinc-200 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-900 text-zinc-600 dark:text-zinc-400 font-bold">
@@ -222,7 +211,7 @@ export default function FormResponsePage() {
                         <div className="animate-in slide-in-from-bottom-4 duration-500">
                             <DataTable
                                 data={filteredResponses}
-                                columns={COLUMNS}
+                                columns={columns}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                             />

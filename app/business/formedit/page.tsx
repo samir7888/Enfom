@@ -234,27 +234,14 @@ const ConfirmDialog: React.FC<{
 };
 
 // Helper function to load data from localStorage
-const loadFromLocalStorage = () => {
+const loadFromLocalStorage = (key: "formEditData" | "formData") => {
   if (typeof window === "undefined") return null;
 
   try {
-    const savedData = localStorage.getItem("formEditData");
+    const savedData = localStorage.getItem(key);
     return savedData ? JSON.parse(savedData) : null;
   } catch (error) {
-    console.error("Error loading from localStorage:", error);
-    return null;
-  }
-};
-
-// Helper function to load form data from addform page
-const loadFormDataFromAddForm = () => {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const formData = localStorage.getItem("formData");
-    return formData ? JSON.parse(formData) : null;
-  } catch (error) {
-    console.error("Error loading formData from localStorage:", error);
+    console.error(`Error loading ${key} from localStorage:`, error);
     return null;
   }
 };
@@ -316,9 +303,8 @@ const defaultStyles: FormStyles = {
 // Main Component
 export default function FormEdit() {
   // Load saved data from localStorage or use defaults
-  const savedData = loadFormDataFromAddForm();
-  // Static Data
-  const [formData] = useState<FormData>(defaultFormData);
+  const savedData = loadFromLocalStorage("formEditData");
+  const addFormData = loadFromLocalStorage("formData");
 
   const formId = useSearchParams().get("id");
 
@@ -350,7 +336,6 @@ export default function FormEdit() {
     }
 
     // Second priority: Check for form data from addform page
-    const addFormData = loadFormDataFromAddForm();
     if (addFormData?.formTemplate) {
       return addFormData.formTemplate
         .split(",")
@@ -560,7 +545,7 @@ export default function FormEdit() {
     const fields: any[] = [
       {
         name: "title",
-        label: data?.data?.formName || formData.formFor,
+        label: data?.data?.formName || defaultFormData.formFor,
         type: "display",
         styles: {
           background: styles.main.backgroundColor,
@@ -621,7 +606,7 @@ export default function FormEdit() {
       FormTemplateId: formId,
       DesignJson: JSON.stringify({
         version: "1.0",
-        formTitle: data?.data?.formName || formData.formFor,
+        formTitle: data?.data?.formName || defaultFormData.formFor,
         fields: fields,
       }),
     };
@@ -665,9 +650,6 @@ export default function FormEdit() {
     localStorage.setItem("formEditData", JSON.stringify(formEditData));
   }, [formFields, styles]);
 
-  useEffect(() => {
-    loadFromLocalStorage();
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -778,13 +760,12 @@ export default function FormEdit() {
                   .textAlign as React.CSSProperties["textAlign"],
               }}
             >
-              {isLoading ? "Loading..." : (data?.data?.formName || formData.formFor)}
+              {isLoading ? "Loading..." : (data?.data?.formName || defaultFormData.formFor)}
             </h2>
 
             {/* Form Fields */}
             <div className="space-y-5">
               {formFields.map((field, index) => {
-                console.log(field, "filed");
                 return (
                   <div key={index}>
                     <label

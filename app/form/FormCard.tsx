@@ -3,21 +3,62 @@
 import { normalizeField } from "@/lib/validation";
 import { useFormEngine } from "@/lib/useFormEngine";
 import SuccessOverlay from "./SuccessOverlay";
-import { FormConfig } from "../config/forms";
 import FormFieldComponent from "./FormFieldComponent";
+import { FormConfig } from "../config/forms";
+import { useAppMutation } from "@/hooks/useAppMutation";
+import { useUser } from "@/contexts/userContext";
+import { toast } from "sonner";
 
 interface Props {
   config: FormConfig;
 }
 
 export default function FormCard({ config }: Props) {
-  const isDefault = config.style === "default";
-  const fields = config.fields.map(normalizeField);
+  const { user } = useUser();
+  const { mutate, isPending } = useAppMutation();
+  const isDefault = config.isStyle === false;
 
-  const { state, handleChange, handleFileChange, handleSubmit, reset } =
+  // Support both fields and templateFields for backward compatibility
+  const rawFields = config.fields || (config as any).templateFields || [];
+  const fields = rawFields.map(normalizeField);
+
+  const { state, handleChange, handleFileChange, handleSubmit: validate, reset } =
     useFormEngine(fields);
 
- 
+  const handleSubmit = () => {
+    if (!validate()) {
+      toast.error("Please fix the errors in the form.");
+      return;
+    }
+
+    const payload = {
+      formTemplateId: config.id,
+      userId: user?.sub || "anonymous",
+      formData: JSON.stringify(state.values),
+      isPaid: config.isPaid ?? false,
+      paymentMethod: "Direct",
+      paidAmount: config.price ?? 0,
+      submittedAt: new Date().toISOString(),
+    };
+
+    mutate({
+      endpoint: "FormSubmission", // Updated to follow schema context
+      method: "post",
+      data: payload,
+      onSuccess: () => {
+        toast.success("Form submitted successfully!");
+        // The useFormEngine already sets state.submitted to true via validate()
+        // but we could also trigger a custom success state if needed.
+      },
+      onError: (err) => {
+        console.error("Submission error:", err);
+        toast.error("Failed to submit form. Please try again.");
+      },
+    });
+  };
+
+
+
 
   return (
     <div
@@ -46,7 +87,7 @@ export default function FormCard({ config }: Props) {
               handleSubmit();
             }}
           >
-            {fields.map((field) => (
+            {fields.map((field: any) => (
               <FormFieldComponent
                 key={field.name}
                 field={field}
@@ -54,6 +95,7 @@ export default function FormCard({ config }: Props) {
                 value={state.values[field.name] ?? ""}
                 file={state.files[field.name] ?? null}
                 error={state.errors[field.name] ?? ""}
+                isPending={isPending}
                 onChange={handleChange}
                 onFileChange={handleFileChange}
                 onSubmit={handleSubmit}

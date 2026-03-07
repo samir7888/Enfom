@@ -5,53 +5,7 @@ import FormCard from "./FormCard";
 
 // Mock form configurations with all field types and diverse styles
 const MOCK_FORM_CONFIGS: FormConfig = 
-  // {
-  //   formTitle: "User Registration Form",
-  //   style: "default",
-  //   fields: [
-  //     {
-  //       name: "firstName",
-  //       label: "First Name",
-  //       type: "text",
-  //       placeholder: "Enter your first name",
-  //       required: true,
-  //     },
-  //     {
-  //       name: "lastName",
-  //       label: "Last Name",
-  //       type: "text",
-  //       placeholder: "Enter your last name",
-  //       required: true,
-  //     },
-  //     {
-  //       name: "email",
-  //       label: "Email Address",
-  //       type: "email",
-  //       placeholder: "Enter your email",
-  //       required: true,
-  //     },
-  //     {
-  //       name: "password",
-  //       label: "Password",
-  //       type: "password",
-  //       placeholder: "Create a strong password",
-  //       required: true,
-  //       strengthMeter: true,
-  //     },
-  //     {
-  //       name: "phone",
-  //       label: "Phone Number",
-  //       type: "tel",
-  //       placeholder: "+1 (555) 123-4567",
-  //       required: false,
-  //     },
-  //     {
-  //       name: "submitBtn",
-  //       label: "Create Account",
-  //       type: "button",
-  //     },
-  //   ],
-  // },
+  
 
   {
     formTitle: "Personal Information",

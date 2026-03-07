@@ -360,6 +360,7 @@ export default function FormCreate() {
       templateFields: JSON.stringify(allFields),
       createdAt: currentForm.createdAt.toISOString(),
       publishedAt: new Date().toISOString(),
+      isStyle: false
     };
 
     const response = mutate({
@@ -367,7 +368,7 @@ export default function FormCreate() {
       method: "post",
       data: config,
       onSuccess: (res: any) => {
-        router.push("/business/createform");
+        router.push("/business/formcreate");
       },
       onError: (err) => {
         console.log(err);
@@ -388,6 +389,7 @@ export default function FormCreate() {
       templateFields: JSON.stringify(allFields),
       createdAt: currentForm.createdAt.toISOString(),
       publishedAt: new Date().toISOString(),
+      isStyle: true
     };
 
     const response = mutate({

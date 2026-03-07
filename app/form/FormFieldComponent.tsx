@@ -10,6 +10,7 @@ interface Props {
   value: string;
   file: File | null;
   error: string;
+  isPending?: boolean;
   onChange: (name: string, value: string) => void;
   onFileChange: (name: string, file: File | null) => void;
   onSubmit: () => void;
@@ -21,6 +22,7 @@ export default function FormFieldComponent({
   value,
   file,
   error,
+  isPending,
   onChange,
   onFileChange,
   onSubmit,
@@ -41,9 +43,10 @@ export default function FormFieldComponent({
         <button
           type="button"
           onClick={onSubmit}
-          className="mt-1.5 w-full rounded-[10px] bg-indigo-600 py-3 text-[15px] font-bold text-white shadow-[0_4px_14px_rgba(79,70,229,0.28)] transition-all duration-150 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-[0_6px_20px_rgba(79,70,229,0.35)] active:translate-y-0"
+          disabled={isPending}
+          className="mt-1.5 w-full rounded-[10px] bg-indigo-600 py-3 text-[15px] font-bold text-white shadow-[0_4px_14px_rgba(79,70,229,0.28)] transition-all duration-150 hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-[0_6px_20px_rgba(79,70,229,0.35)] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {field.label ?? "Submit"}
+          {isPending ? "Submitting..." : (field.label ?? "Submit")}
         </button>
       );
     }
@@ -51,10 +54,11 @@ export default function FormFieldComponent({
       <button
         type="button"
         onClick={onSubmit}
+        disabled={isPending}
         style={field.styles as React.CSSProperties}
-        className="transition-opacity hover:opacity-80"
+        className="transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {field.label ?? "Submit"}
+        {isPending ? "Submitting..." : (field.label ?? "Submit")}
       </button>
     );
   }
@@ -111,9 +115,9 @@ export default function FormFieldComponent({
         style={
           !isDefault && field.styles
             ? ({
-                ...field.styles,
-                ...(error ? { border: "2px solid #ef4444" } : {}),
-              } as React.CSSProperties)
+              ...field.styles,
+              ...(error ? { border: "2px solid #ef4444" } : {}),
+            } as React.CSSProperties)
             : undefined
         }
         aria-invalid={!!error}
