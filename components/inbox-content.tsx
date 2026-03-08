@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bookmark, Reply, Send, Mail, ChevronDown, Check } from 'lucide-react';
+import { Bookmark, Reply, Send, Mail, ChevronDown, Check, Plus, X, ChevronLeft } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 /* ─────────────────────────── Types ─────────────────────────── */
 type Tab = 'General' | 'Following' | 'Archive';
@@ -287,6 +289,8 @@ export function InboxContent() {
     const [activeTab, setActiveTab] = useState<Tab>('General');
     const tabs: Tab[] = ['General', 'Following', 'Archive'];
     const tabCount: Partial<Record<Tab, number>> = { General: 2 };
+    const [isAddClicked, setIsAddClicked] = useState(false);
+    const [search, setSearch] = useState('');
 
     const filteredNotifications =
         activeTab === 'General' ? NOTIFICATIONS : [];
@@ -296,10 +300,13 @@ export function InboxContent() {
             {/* Header */}
             <div className="px-6 pt-6 pb-2 border-b border-slate-100 dark:border-zinc-800">
                 <div className="flex items-center justify-between mb-6">
+                    {isAddClicked && <Button variant={"outline"} onClick={() => setIsAddClicked(!isAddClicked)} ><ChevronLeft className="w-4 h-4" /> </Button>}
                     <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">
                         Inbox
                     </h1>
                     <button
+
+                        onClick={() => setIsAddClicked(!isAddClicked)}
                         className="
               flex items-center gap-1.5 text-slate-500
               px-3 py-1.5 rounded-xl
@@ -308,13 +315,12 @@ export function InboxContent() {
             "
                         aria-label="Filter inbox view"
                     >
-                        <Mail className="w-4 h-4" />
-                        <ChevronDown className="w-3.5 h-3.5" />
+                        {!isAddClicked &&  <Plus className="w-4 h-4" />}
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <nav
+                {!isAddClicked ? <nav
                     className="flex gap-1"
                     role="tablist"
                     aria-label="Inbox tabs"
@@ -349,7 +355,17 @@ export function InboxContent() {
                             )}
                         </button>
                     ))}
-                </nav>
+                </nav> : (
+                    <div className='flex items-center gap-2 justify-center h-full'>
+                        <Input
+                            className="rounded-3xl"
+                            placeholder="Search by name or email"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                        <Button variant={"outline"} >Search</Button>
+                    </div>
+                )}
             </div>
 
             {/* List Container */}

@@ -126,7 +126,7 @@ export default function Home() {
 
   const { data: notices, isLoading: noticesLoading, error: noticesError } = useFetchData<NoticeResponse>({
     queryKey: ["notices"],
-    endpoint: "Notice/GetNotice",
+    endpoint: "Notice/GetAllNotices",
   });
   const { user } = useUser();
 
