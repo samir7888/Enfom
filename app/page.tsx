@@ -53,9 +53,9 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { MOCK_NOTICES, Notice } from "@/lib/noticeData";
 import { useUser } from "@/contexts/userContext";
 import { useFetchData } from "@/hooks/useFetchData";
+import { NoticeResponse } from "./notice/page";
 
 // --- Types ---
 
@@ -121,6 +121,13 @@ export default function Home() {
       endpoint: "FormTemplates/public",
     }
   );
+
+
+
+  const { data: notices, isLoading: noticesLoading, error: noticesError } = useFetchData<NoticeResponse>({
+    queryKey: ["notices"],
+    endpoint: "Notice/GetNotice",
+  });
   const { user } = useUser();
 
 
@@ -250,9 +257,15 @@ export default function Home() {
                 )
               ) : (
                 <div className="col-span-full space-y-6">
-                  {MOCK_NOTICES.map((notice) => (
-                    <NoticeItem key={notice.id} notice={notice} />
-                  ))}
+                  {noticesLoading ? (
+                    <div className="py-12 text-center text-gray-400 font-medium animate-pulse">Fetching latest notices...</div>
+                  ) : notices?.data && notices.data.length > 0 ? (
+                    notices.data.map((notice) => (
+                      <NoticeItem key={notice.id} notice={notice as any} />
+                    ))
+                  ) : (
+                    <div className="py-12 text-center text-gray-400 font-medium">No announcements yet. Check back later!</div>
+                  )}
                 </div>
               )}
             </div>
@@ -426,7 +439,7 @@ function FormCard({ form }: { form: FormCardData }) {
                 </p>
               </div>
             </SheetContent>
-          </Sheet>  
+          </Sheet>
 
           <Link href={`/form/${form.formId}?isStyle=${form.isStyle}`}
             className="flex items-center justify-center h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 gap-2 font-bold rounded-xl flex-1 border-none"
@@ -470,64 +483,47 @@ function FormCard({ form }: { form: FormCardData }) {
   );
 }
 
-function NoticeItem({ notice }: { notice: Notice }) {
+function NoticeItem({ notice }: { notice: any }) {
+  const commentCount = notice.noticeCommentEntities?.length || 0;
+  const publisherName = notice.publisher || notice.publisherId?.substring(0, 8) || "System";
+  const initials = publisherName.substring(0, 2).toUpperCase();
+
   return (
-    <Link href={`/notice/${notice.id}`} className="block">
-      <Card className="rounded-2xl border-gray-200/60 shadow-sm overflow-hidden bg-white border hover:shadow-lg transition-all cursor-pointer group">
+    <Link href={`/notice`} className="block">
+      <Card className="rounded-2xl border-gray-200/60 shadow-sm overflow-hidden bg-white border hover:shadow-xl transition-all cursor-pointer group">
         <div className="p-6 md:p-8">
           {/* Card Header */}
           <div className="flex items-start justify-between mb-5">
             <div className="flex items-center gap-4">
-              <div className="size-12 rounded-full bg-gradient-to-br from-slate-700 to-emerald-900 flex items-center justify-center text-white font-bold text-lg select-none">
-                {notice.authorInitials}
+              <div className="size-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white font-bold text-lg select-none shadow-lg shadow-emerald-100/50">
+                {initials}
               </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[17px] font-bold text-gray-900 leading-none group-hover:text-blue-600 transition-colors">
-                    {notice.source}
+                  <span className="text-[17px] font-bold text-gray-900 leading-none group-hover:text-[#10B981] transition-colors">
+                    {publisherName}
                   </span>
-                  <Badge className="bg-gray-100 text-gray-400 border-none rounded-md px-2 py-0.5 text-[11px] font-bold">
-                    {notice.category}
+                  <Badge className="bg-emerald-50 text-emerald-600 border-none rounded-md px-2 py-0.5 text-[11px] font-bold">
+                    Official
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-medium text-gray-400">
-                    {notice.createdAt}
+                    {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : "Just now"}
                   </span>
                   <span className="text-gray-300">•</span>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "rounded-lg px-2 py-0 text-[10px] font-bold border-none h-5 flex items-center shadow-none",
-                      notice.status === "active"
-                        ? "bg-emerald-50 text-emerald-600/70"
-                        : "bg-gray-50 text-gray-400"
-                    )}
-                  >
-                    {notice.status}
-                  </Badge>
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-gray-400">
+                    <Clock size={12} />
+                    Active
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <Badge
-                className={cn(
-                  "rounded-xl px-3 py-1.5 text-[12px] font-bold border-none gap-1.5",
-                  notice.priority === "High"
-                    ? "bg-red-50 text-red-500"
-                    : "bg-amber-50 text-amber-500"
-                )}
-              >
-                <AlertCircle
-                  size={14}
-                  className={
-                    notice.priority === "High"
-                      ? "text-red-400"
-                      : "text-amber-400"
-                  }
-                />
-                {notice.priority}
+              <Badge className="bg-blue-50 text-blue-500 rounded-xl px-3 py-1.5 text-[12px] font-bold border-none gap-1.5">
+                <AlertCircle size={14} className="text-blue-400" />
+                In Announcement
               </Badge>
               <button
                 className="text-gray-400 hover:text-gray-900 transition-colors p-1"
@@ -540,78 +536,75 @@ function NoticeItem({ notice }: { notice: Notice }) {
 
           {/* Content Section */}
           <div className="space-y-4 mb-6">
-            <h3 className="text-[20px] font-bold text-gray-900 leading-tight group-hover:text-blue-600 transition-colors">
+            <h3 className="text-[20px] font-bold text-gray-900 leading-tight group-hover:text-[#10B981] transition-colors">
               {notice.title}
             </h3>
-            <p className="text-gray-400/90 text-[16px] leading-[1.6] font-medium">
-              {notice.message}
+            <p className="text-gray-500/90 text-[16px] leading-[1.6] font-medium line-clamp-3">
+              {notice.description}
             </p>
           </div>
 
           {/* Notice Image Preview */}
-          {notice.image && (
-            <div className="mb-6 rounded-2xl overflow-hidden">
+          {notice.imageUrl && (
+            <div className="mb-6 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
               <img
-                src={notice.image}
+                src={notice.imageUrl}
                 alt={notice.title}
-                className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
           )}
 
           {/* Social Stats */}
           <div className="flex items-center justify-between pb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-red-400/90 flex items-center justify-center">
-                <Heart size={12} fill="white" className="text-white" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                  <ThumbsUp size={14} />
+                </div>
+                <span className="text-[14px] font-medium text-gray-400">
+                  {notice.audience || 0} reached
+                </span>
               </div>
-              <span className="text-[14px] font-medium text-gray-400">
-                {notice.interested} interested
-              </span>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-[14px] font-medium text-gray-400 italic">
-                {notice.comments} comments
-              </span>
-              <span className="text-[14px] font-medium text-gray-400 italic">
-                {notice.responses} responses
+                {commentCount} comments
               </span>
             </div>
           </div>
 
           {/* Action Bar */}
           <div className="pt-4 border-t border-gray-100/80 flex items-center justify-between">
-            <div className="flex items-center gap-1 sm:gap-4 flex-1">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1">
               <Button
                 variant="ghost"
-                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4"
-                onClick={(e) => e.preventDefault()}
+                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-emerald-50 hover:text-emerald-600 px-4 transition-all"
+                onClick={(e) => {
+                  e.preventDefault();
+                  toast.success("Added to interests!");
+                }}
               >
                 <Heart size={18} />
                 Interested
               </Button>
               <Button
                 variant="ghost"
-                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4"
+                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-emerald-50 hover:text-emerald-600 px-4 transition-all"
                 onClick={(e) => e.preventDefault()}
               >
                 <MessageCircle size={18} />
                 Comment
               </Button>
-              <Button
-                variant="ghost"
-                className="flex-1 sm:flex-none h-11 rounded-xl text-gray-500 font-bold gap-2 hover:bg-gray-50 px-4"
-                onClick={(e) => e.preventDefault()}
-              >
-                <FileText size={18} />
-                Fill Form
-              </Button>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-11 w-11 rounded-xl text-gray-400 hover:text-gray-900"
-              onClick={(e) => e.preventDefault()}
+              className="h-11 w-11 rounded-xl text-gray-400 hover:text-emerald-600 hover:bg-emerald-50"
+              onClick={(e) => {
+                e.preventDefault();
+                toast.info("Notice saved!");
+              }}
             >
               <Bookmark size={20} />
             </Button>

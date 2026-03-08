@@ -44,7 +44,6 @@ export default function RegisterPage() {
       method: "post",
       data,
       onSuccess: () => {
-        alert("success")
         router.push("/")
       }
     })

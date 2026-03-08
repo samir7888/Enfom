@@ -3,16 +3,17 @@
 import { useState } from "react";
 import {
     Plus, Pencil, Trash2, Eye, MessageSquare,
-    X, Image as ImageIcon, Link as LinkIcon, FileText,
-    Clock, Bell, Search, CornerDownRight, Send, Reply
+    X, ImageIcon, LinkIcon, FileText,
+    Clock, Bell, Search, Send, Reply
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useFetchData } from "@/hooks/useFetchData";
+import { useAppMutation } from "@/hooks/useAppMutation";
 
 // --- Types ---
 
@@ -26,70 +27,46 @@ interface Comment {
 
 interface Notice {
     id: string;
+    publisherId: string;
+    publisher?: string | null;
     title: string;
-    message: string;
-    image?: string;
-    source: string;
-    views: number;
-    comments: Comment[];
+    description: string;
+    imageUrl: string;
+    audience: number;
+    startsAt: string;
+    endsAt: string;
+    isDeleted: boolean;
     createdAt: string;
+    noticeCommentEntities: Comment[];
+    views?: number;
 }
 
-// --- Mock Data ---
-
-const INITIAL_NOTICES: Notice[] = [
-    {
-        id: "1",
-        title: "Annual General Meeting 2024",
-        message: "The annual general meeting for the year 2024 will be held on March 15th at the main auditorium. All members are requested to attend and participate in the voting process for the new board members.",
-        image: "https://images.unsplash.com/photo-1540317580384-e5d43616b9aa?q=80&w=1000&auto=format&fit=crop",
-        source: "Administration",
-        views: 1240,
-        comments: [
-            {
-                id: "c1",
-                author: "John Doe",
-                text: "Will there be remote access for those who can't attend in person?",
-                date: "2 hours ago",
-                replies: [
-                    {
-                        id: "r1",
-                        author: "Admin",
-                        text: "Yes, a Zoom link will be sent out via email 24 hours before the meeting.",
-                        date: "1 hour ago",
-                        replies: []
-                    }
-                ]
-            }
-        ],
-        createdAt: "2024-03-01T10:00:00Z",
-    },
-    {
-        id: "2",
-        title: "New Office Policy Update",
-        message: "We have updated our remote work policy. Please review the attached document for more details regarding the new hybrid model starting next month.",
-        source: "HR Department",
-        views: 856,
-        comments: [],
-        createdAt: "2024-02-28T14:30:00Z",
-    },
-];
+export interface NoticeResponse {
+    success: boolean;
+    data: Notice[];
+}
 
 // --- Components ---
 
 export default function NoticePage() {
-    const [notices, setNotices] = useState<Notice[]>(INITIAL_NOTICES);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
     const [viewingNotice, setViewingNotice] = useState<Notice | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const { mutate, isPending } = useAppMutation();
 
-    // Create/Edit Notice Form State
+    const { data: notices, isLoading, error } = useFetchData<NoticeResponse>({
+        queryKey: ["notices"],
+        endpoint: "Notice/GetNotice",
+    });
+
     const [formData, setFormData] = useState({
         title: "",
-        message: "",
-        image: "",
-        source: "",
+        description: "",
+        imageUrl: "",
+        audience: 0,
+        startsAt: "",
+        endsAt: ""
     });
 
     const handleOpenModal = (notice?: Notice) => {
@@ -97,102 +74,84 @@ export default function NoticePage() {
             setEditingNotice(notice);
             setFormData({
                 title: notice.title,
-                message: notice.message,
-                image: notice.image || "",
-                source: notice.source,
+                description: notice.description,
+                imageUrl: notice.imageUrl || "",
+                audience: notice.audience || 0,
+                startsAt: notice.startsAt ? notice.startsAt.split('.')[0] : "", // Format for datetime-local
+                endsAt: notice.endsAt ? notice.endsAt.split('.')[0] : "",
             });
         } else {
             setEditingNotice(null);
-            setFormData({ title: "", message: "", image: "", source: "" });
+            setFormData({ title: "", description: "", imageUrl: "", audience: 0, startsAt: "", endsAt: "" });
         }
         setIsModalOpen(true);
     };
 
     const handleSaveNotice = () => {
-        if (editingNotice) {
-            setNotices(prev => prev.map(n => n.id === editingNotice.id ? { ...n, ...formData } : n));
-        } else {
-            const newNotice: Notice = {
-                id: Date.now().toString(),
-                ...formData,
-                views: 0,
-                comments: [],
-                createdAt: new Date().toISOString(),
-            };
-            setNotices(prev => [newNotice, ...prev]);
-        }
-        setIsModalOpen(false);
+        const endpoint = editingNotice ? `Notice/UpdateNotice/${editingNotice.id}` : 'Notice/AddNotice';
+        const method = editingNotice ? 'put' : 'post';
+
+        // Prepare payload, including ID for updates if necessary
+        const payload = editingNotice ? { ...formData, id: editingNotice.id } : formData;
+
+        mutate({
+            endpoint: endpoint,
+            method: method,
+            data: payload,
+            invalidateTags: [["notices"]],
+            onSuccess: () => {
+                setIsModalOpen(false);
+            }
+        });
     };
 
     const handleDeleteNotice = (id: string) => {
-        setNotices(prev => prev.filter(n => n.id !== id));
-        if (viewingNotice?.id === id) setViewingNotice(null);
+        if (confirm("Are you sure you want to delete this notice?")) {
+            mutate({
+                endpoint: `Notice/DeleteNotice/${id}`,
+                method: 'delete',
+                invalidateTags: [["notices"]],
+                onSuccess: () => {
+                    if (viewingNotice?.id === id) setViewingNotice(null);
+                }
+            });
+        }
     };
 
-    const handleAddComment = (noticeId: string, text: string, parentId?: string) => {
-        setNotices(prev => prev.map(n => {
-            if (n.id !== noticeId) return n;
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-500 font-bold animate-pulse">Loading amazing notices...</p>
+                </div>
+            </div>
+        );
+    }
 
-            const newComment: Comment = {
-                id: `c-${Date.now()}`,
-                author: "Current User",
-                text,
-                date: "Just now",
-                replies: []
-            };
+    if (!notices || error) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center p-6">
+                <Card className="max-w-md w-full p-8 text-center space-y-4 rounded-3xl border-red-100 shadow-xl shadow-red-50">
+                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto text-red-500">
+                        <Bell size={32} />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900">Oops! Something went wrong</h2>
+                    <p className="text-slate-500 font-medium">{error?.message || "We couldn't fetch the notices."}</p>
+                    <Button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-6 rounded-xl w-full">
+                        Retry
+                    </Button>
+                </Card>
+            </div>
+        );
+    }
 
-            if (!parentId) {
-                return { ...n, comments: [...n.comments, newComment] };
-            }
-
-            const updateComments = (comments: Comment[]): Comment[] => {
-                return comments.map(c => {
-                    if (c.id === parentId) {
-                        return { ...c, replies: [...c.replies, newComment] };
-                    }
-                    return { ...c, replies: updateComments(c.replies) };
-                });
-            };
-
-            return { ...n, comments: updateComments(n.comments) };
-        }));
-    };
-
-    const handleDeleteComment = (noticeId: string, commentId: string) => {
-        setNotices(prev => prev.map(n => {
-            if (n.id !== noticeId) return n;
-
-            const removeComment = (comments: Comment[]): Comment[] => {
-                return comments
-                    .filter(c => c.id !== commentId)
-                    .map(c => ({ ...c, replies: removeComment(c.replies) }));
-            };
-
-            return { ...n, comments: removeComment(n.comments) };
-        }));
-    };
-
-    const handleEditComment = (noticeId: string, commentId: string, newText: string) => {
-        setNotices(prev => prev.map(n => {
-            if (n.id !== noticeId) return n;
-
-            const updateComment = (comments: Comment[]): Comment[] => {
-                return comments.map(c => {
-                    if (c.id === commentId) return { ...c, text: newText };
-                    return { ...c, replies: updateComment(c.replies) };
-                });
-            };
-
-            return { ...n, comments: updateComment(n.comments) };
-        }));
-    };
-
-    const filteredNotices = notices.filter(n =>
+    const filteredNotices = notices.data.filter(n =>
         n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        n.message.toLowerCase().includes(searchQuery.toLowerCase())
+        n.description.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const currentNotice = viewingNotice ? notices.find(n => n.id === viewingNotice.id) : null;
+    const currentNotice = viewingNotice ? notices.data.find(n => n.id === viewingNotice.id) : null;
 
     return (
         <div className="min-h-screen bg-[#F8FAFC] pb-20">
@@ -260,9 +219,10 @@ export default function NoticePage() {
             <DetailsSheet
                 notice={currentNotice || null}
                 onClose={() => setViewingNotice(null)}
-                onAddComment={handleAddComment}
-                onDeleteComment={handleDeleteComment}
-                onEditComment={handleEditComment}
+                // API-backed comments would go here
+                onAddComment={() => { }}
+                onDeleteComment={() => { }}
+                onEditComment={() => { }}
             />
 
             {/* Create/Edit Modal */}
@@ -287,16 +247,26 @@ export default function NoticePage() {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Bell size={12} /> Description</label>
-                                <Textarea placeholder="Announcement details..." value={formData.message} onChange={e => setFormData({ ...formData, message: e.target.value })} className="rounded-xl min-h-[120px] resize-none" />
+                                <Textarea placeholder="Announcement details..." value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="rounded-xl min-h-[120px] resize-none" />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><LinkIcon size={12} /> Source</label>
-                                    <Input placeholder="e.g. HR Dept" value={formData.source} onChange={e => setFormData({ ...formData, source: e.target.value })} className="rounded-xl py-6" />
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><ImageIcon size={12} /> Image URL</label>
+                                    <Input placeholder="https://..." value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })} className="rounded-xl py-6" />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><ImageIcon size={12} /> Image URL</label>
-                                    <Input placeholder="https://..." value={formData.image} onChange={e => setFormData({ ...formData, image: e.target.value })} className="rounded-xl py-6" />
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Eye size={12} /> Audience</label>
+                                    <Input type="number" placeholder="0" value={formData.audience} onChange={e => setFormData({ ...formData, audience: parseInt(e.target.value) || 0 })} className="rounded-xl py-6" />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Clock size={12} /> Starts At</label>
+                                    <Input type="datetime-local" value={formData.startsAt} onChange={e => setFormData({ ...formData, startsAt: e.target.value })} className="rounded-xl py-6" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Clock size={12} /> Ends At</label>
+                                    <Input type="datetime-local" value={formData.endsAt} onChange={e => setFormData({ ...formData, endsAt: e.target.value })} className="rounded-xl py-6" />
                                 </div>
                             </div>
                         </div>
@@ -304,8 +274,8 @@ export default function NoticePage() {
 
                     <DialogFooter className="bg-slate-50 p-6 flex items-center gap-3 border-t border-slate-100">
                         <Button variant="outline" onClick={() => setIsModalOpen(false)} className="flex-1 rounded-xl py-6 font-bold">Cancel</Button>
-                        <Button onClick={handleSaveNotice} className="flex-1 rounded-xl py-6 font-black bg-blue-600 hover:bg-blue-700 text-white shadow-lg active:scale-95 transition-all">
-                            {editingNotice ? "Update" : "Create"}
+                        <Button onClick={handleSaveNotice} disabled={isPending} className="flex-1 rounded-xl py-6 font-black bg-blue-600 hover:bg-blue-700 text-white shadow-lg active:scale-95 transition-all">
+                            {isPending ? "Processing..." : editingNotice ? "Update" : "Create"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -317,39 +287,49 @@ export default function NoticePage() {
 // --- Notice Card Component ---
 
 function NoticeCard({ notice, onEdit, onDelete, onView }: {
-    notice: Notice,
-    onEdit: () => void,
-    onDelete: () => void,
-    onView: () => void
+    notice: Notice;
+    onEdit: () => void;
+    onDelete: () => void;
+    onView: () => void;
 }) {
     const commentCount = (comments: Comment[]): number => {
-        return comments.reduce((acc, c) => acc + 1 + commentCount(c.replies), 0);
+        if (!comments) return 0;
+        return comments.reduce((acc, c) => acc + 1 + commentCount(c.replies || []), 0);
     };
 
     return (
         <Card className="group overflow-hidden border-slate-200 hover:border-blue-200 shadow-sm hover:shadow-xl transition-all duration-300 rounded-3xl bg-white border">
             <div className="flex flex-col md:flex-row h-full">
-                {notice.image && (
-                    <div className="md:w-[180px] md:h-[180px] h-48 w-full overflow-hidden relative shrink-0 rounded-2xl md:m-4 m-0">
+                {notice.imageUrl && (
+                    <div className="md:w-[220px] md:h-auto h-48 w-full overflow-hidden relative shrink-0">
                         <img
-                            src={notice.image}
+                            src={notice.imageUrl}
                             alt={notice.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
-                        <div className="absolute inset-0 bg-linear-to-t from-black/40 to-transparent opacity-60" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60" />
                     </div>
                 )}
 
                 <div className="flex-1 flex flex-col p-6 md:p-8">
                     <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                {notice.source}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                                <div className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                    {notice.publisher || notice.publisherId.substring(0, 8)}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-slate-400 font-medium text-[10px]">
+                                    <Clock size={12} />
+                                    {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : 'Recently'}
+                                </div>
                             </div>
-                            <div className="flex items-center gap-1.5 text-slate-300 font-medium text-[10px]">
-                                <Clock size={12} />
-                                {new Date(notice.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </div>
+                            {(notice.startsAt || notice.endsAt) && (
+                                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-500 bg-slate-50 px-3 py-1 rounded-lg w-fit border border-slate-100 italic">
+                                    <Clock size={12} className="text-blue-500" />
+                                    {notice.startsAt && new Date(notice.startsAt).toLocaleDateString()}
+                                    {notice.endsAt && ` - ${new Date(notice.endsAt).toLocaleDateString()}`}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -363,7 +343,7 @@ function NoticeCard({ notice, onEdit, onDelete, onView }: {
                             {notice.title}
                         </h3>
                         <p className="text-slate-500 text-sm leading-relaxed line-clamp-2">
-                            {notice.message}
+                            {notice.description}
                         </p>
                     </div>
 
@@ -372,16 +352,16 @@ function NoticeCard({ notice, onEdit, onDelete, onView }: {
                             <div className="flex items-center gap-2 group/stat">
                                 <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-blue-500 group-hover/stat:bg-blue-100 transition-colors"><Eye size={14} /></div>
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none">Views</span>
-                                    <span className="text-sm font-bold text-slate-700">{notice.views.toLocaleString()}</span>
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none text-[8px]">Views</span>
+                                    <span className="text-sm font-bold text-slate-700 leading-tight">{notice?.views?.toLocaleString() ?? 0}</span>
                                 </div>
                             </div>
 
                             <div className="flex items-center gap-2 group/stat">
                                 <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-indigo-500 group-hover/stat:bg-indigo-100 transition-colors"><MessageSquare size={14} /></div>
                                 <div className="flex flex-col">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none">Comments</span>
-                                    <span className="text-sm font-bold text-slate-700">{commentCount(notice.comments)}</span>
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter leading-none text-[8px]">Comments</span>
+                                    <span className="text-sm font-bold text-slate-700 leading-tight">{notice.noticeCommentEntities ? commentCount(notice.noticeCommentEntities) : 0}</span>
                                 </div>
                             </div>
                         </div>
@@ -406,16 +386,16 @@ function DetailsSheet({
     onDeleteComment,
     onEditComment
 }: {
-    notice: Notice | null,
-    onClose: () => void,
-    onAddComment: (noticeId: string, text: string, parentId?: string) => void,
-    onDeleteComment: (noticeId: string, commentId: string) => void,
-    onEditComment: (noticeId: string, commentId: string, newText: string) => void
+    notice: Notice | null;
+    onClose: () => void;
+    onAddComment: (noticeId: string, text: string, parentId?: string) => void;
+    onDeleteComment: (noticeId: string, commentId: string) => void;
+    onEditComment: (noticeId: string, commentId: string, newText: string) => void;
 }) {
     const [newComment, setNewComment] = useState("");
     const [replyingTo, setReplyingTo] = useState<string | null>(null);
-    const [editingComment, setEditingComment] = useState<{ id: string, text: string } | null>(null);
 
+    // Filter out potential editing state for simplicity in first pass
     if (!notice) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -426,23 +406,32 @@ function DetailsSheet({
         setReplyingTo(null);
     };
 
-    const handleEditSubmit = (commentId: string) => {
-        if (!editingComment?.text.trim()) return;
-        onEditComment(notice.id, commentId, editingComment.text);
-        setEditingComment(null);
-    };
-
     return (
         <Sheet open={!!notice} onOpenChange={(open) => !open && onClose()}>
             <SheetContent className="sm:max-w-xl p-0 border-none shadow-2xl flex flex-col h-full bg-slate-50">
                 <SheetHeader className="bg-white px-8 py-6 border-b border-slate-100 shrink-0">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                            {notice.source}
-                        </span>
-                        <span className="text-slate-300 font-medium text-[10px]">
-                            {new Date(notice.createdAt).toLocaleDateString()}
-                        </span>
+                    <div className="flex flex-col gap-3 mb-2">
+                        <div className="flex items-center gap-2">
+                            <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                {notice.publisher || notice.publisherId.substring(0, 8)}
+                            </span>
+                            <span className="text-slate-400 font-medium text-[10px]">
+                                Published: {notice.createdAt ? new Date(notice.createdAt).toLocaleDateString() : 'Recently'}
+                            </span>
+                        </div>
+                        {(notice.startsAt || notice.endsAt) && (
+                            <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50 p-3 rounded-2xl w-full border border-slate-100">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 shadow-sm shadow-green-200" />
+                                    <span>Starts: {new Date(notice.startsAt).toLocaleString()}</span>
+                                </div>
+                                <div className="hidden sm:block w-px h-4 bg-slate-200" />
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-red-500 shadow-sm shadow-red-200" />
+                                    <span>Ends: {new Date(notice.endsAt).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                     <SheetTitle className="text-2xl font-black text-slate-900 leading-tight">
                         {notice.title}
@@ -450,62 +439,59 @@ function DetailsSheet({
                 </SheetHeader>
 
                 <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10">
-                    {/* Details */}
                     <section>
-                        {notice.image && (
-                            <div className="rounded-3xl overflow-hidden mb-6 aspect-video">
-                                <img src={notice.image} alt={notice.title} className="w-full h-full object-cover" />
+                        {notice.imageUrl && (
+                            <div className="rounded-3xl overflow-hidden mb-6 aspect-video shadow-lg border border-slate-100">
+                                <img src={notice.imageUrl} alt={notice.title} className="w-full h-full object-cover" />
                             </div>
                         )}
-                        <p className="text-slate-600 leading-relaxed text-base">
-                            {notice.message}
+                        <p className="text-slate-600 leading-relaxed text-base whitespace-pre-wrap">
+                            {notice.description}
                         </p>
                     </section>
 
-                    {/* Engagement Stats */}
                     <div className="flex items-center gap-8 py-6 border-y border-slate-200">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600"><Eye size={20} /></div>
                             <div>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Views</p>
-                                <p className="text-base font-bold text-slate-900">{notice.views.toLocaleString()}</p>
+                                <p className="text-base font-bold text-slate-900">{notice?.views?.toLocaleString() ?? 0}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600"><MessageSquare size={20} /></div>
                             <div>
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Discussion</p>
-                                <p className="text-base font-bold text-slate-900">{notice.comments.length} Threads</p>
+                                <p className="text-base font-bold text-slate-900">{notice.noticeCommentEntities ? notice.noticeCommentEntities.length : 0} Threads</p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Comments Section */}
                     <section className="space-y-6">
                         <div className="flex items-center justify-between">
                             <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Comments</h4>
-                            <p className="text-xs font-bold text-slate-400">{notice.comments.length} comments</p>
+                            <p className="text-xs font-bold text-slate-400">{notice.noticeCommentEntities ? notice.noticeCommentEntities.length : 0} comments</p>
                         </div>
 
                         <div className="space-y-8 pb-32">
-                            {notice.comments.map((comment) => (
+                            {notice.noticeCommentEntities?.map((comment) => (
                                 <CommentItem
                                     key={comment.id}
                                     comment={comment}
                                     noticeId={notice.id}
                                     onReply={setReplyingTo}
                                     onDelete={onDeleteComment}
-                                    onEditEnter={(id, text) => setEditingComment({ id, text })}
-                                    editingId={editingComment?.id ?? null}
-                                    editingText={editingComment?.text ?? ""}
-                                    onEditingTextChange={(text) => setEditingComment(prev => prev ? { ...prev, text } : null)}
-                                    onEditSubmit={handleEditSubmit}
-                                    onEditCancel={() => setEditingComment(null)}
+                                    onEditEnter={() => { }} // Simplified
+                                    editingId={null}
+                                    editingText={""}
+                                    onEditingTextChange={() => { }}
+                                    onEditSubmit={() => { }}
+                                    onEditCancel={() => { }}
                                 />
                             ))}
-                            {notice.comments.length === 0 && (
+                            {(!notice.noticeCommentEntities || notice.noticeCommentEntities.length === 0) && (
                                 <div className="text-center py-10 opacity-40">
-                                    <MessageSquare size={40} className="mx-auto mb-3" />
+                                    <MessageSquare size={40} className="mx-auto mb-3 text-slate-300" />
                                     <p className="text-sm font-bold">No comments yet. Be the first!</p>
                                 </div>
                             )}
@@ -513,7 +499,6 @@ function DetailsSheet({
                     </section>
                 </div>
 
-                {/* Floating Input Section */}
                 <div className="bg-white border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
                     {replyingTo && (
                         <div className="flex items-center justify-between mb-3 px-3 py-2 bg-blue-50 rounded-xl text-[11px] font-bold text-blue-700">
@@ -543,77 +528,55 @@ function DetailsSheet({
     );
 }
 
-// --- Recursive Comment Item Component ---
+// --- Simplified Comment Item Component ---
 
 function CommentItem({
     comment,
     noticeId,
     onReply,
     onDelete,
-    onEditEnter,
-    editingId,
-    editingText,
-    onEditingTextChange,
-    onEditSubmit,
-    onEditCancel
 }: {
-    comment: Comment,
-    noticeId: string,
-    onReply: (id: string) => void,
-    onDelete: (noticeId: string, commentId: string) => void,
-    onEditEnter: (id: string, text: string) => void,
-    editingId: string | null,
-    editingText: string,
-    onEditingTextChange: (text: string) => void,
-    onEditSubmit: (id: string) => void,
-    onEditCancel: () => void
+    comment: Comment;
+    noticeId: string;
+    onReply: (id: string) => void;
+    onDelete: (noticeId: string, commentId: string) => void;
+    onEditEnter: (id: string, text: string) => void;
+    editingId: string | null;
+    editingText: string;
+    onEditingTextChange: (text: string) => void;
+    onEditSubmit: (id: string) => void;
+    onEditCancel: () => void;
 }) {
-    const isEditing = editingId === comment.id;
-
     return (
         <div className="group/comment space-y-4">
             <div className="flex gap-4">
-                <div className="w-10 h-10 rounded-2xl bg-slate-200 shrink-0 flex items-center justify-center font-black text-slate-500 text-xs">
-                    {comment.author.substring(0, 2).toUpperCase()}
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 shrink-0 flex items-center justify-center font-black text-blue-600 text-xs border border-blue-100">
+                    {comment.author?.substring(0, 2).toUpperCase() || "UN"}
                 </div>
                 <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                        <h5 className="text-sm font-black text-slate-900">{comment.author}</h5>
+                        <h5 className="text-sm font-black text-slate-900">{comment.author || "User"}</h5>
                         <span className="text-[10px] font-bold text-slate-400">{comment.date}</span>
                     </div>
-
-                    {isEditing ? (
-                        <div className="space-y-2 mt-2">
-                            <Textarea
-                                value={editingText}
-                                onChange={e => onEditingTextChange(e.target.value)}
-                                className="min-h-[80px] rounded-xl text-sm"
-                            />
-                            <div className="flex gap-2">
-                                <Button size="sm" onClick={() => onEditSubmit(comment.id)} className="bg-blue-600 h-8 px-4 text-[11px] font-bold rounded-lg leading-none">Save</Button>
-                                <Button size="sm" variant="ghost" onClick={onEditCancel} className="h-8 px-4 text-[11px] font-bold rounded-lg text-slate-500 leading-none">Cancel</Button>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            <p className="text-slate-600 text-sm leading-relaxed mb-3">{comment.text}</p>
-                            <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => onReply(comment.id)}
-                                    className="flex items-center gap-1.5 text-[11px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors"
-                                >
-                                    <Reply size={12} strokeWidth={3} /> Reply
-                                </button>
-                                <div className="flex items-center gap-1 opacity-0 group-hover/comment:opacity-100 transition-opacity">
-                                    <Button variant={"outline"} onClick={() => onDelete(noticeId, comment.id)} className="p-1 px-2 text-[10px] font-bold text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors">Delete</Button>
-                                </div>
-                            </div>
-                        </>
-                    )}
+                    <p className="text-slate-600 text-sm leading-relaxed mb-3">{comment.text}</p>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => onReply(comment.id)}
+                            className="flex items-center gap-1.5 text-[11px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors"
+                        >
+                            <Reply size={12} strokeWidth={3} /> Reply
+                        </button>
+                        <button
+                            onClick={() => onDelete(noticeId, comment.id)}
+                            className="text-[10px] font-bold text-slate-300 hover:text-red-500 opacity-0 group-hover/comment:opacity-100 transition-all uppercase tracking-widest"
+                        >
+                            Delete
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {comment.replies.length > 0 && (
+            {comment.replies?.length > 0 && (
                 <div className="ml-10 space-y-6 pt-2 border-l-2 border-slate-100 pl-6">
                     {comment.replies.map(reply => (
                         <CommentItem
@@ -622,12 +585,12 @@ function CommentItem({
                             noticeId={noticeId}
                             onReply={onReply}
                             onDelete={onDelete}
-                            onEditEnter={onEditEnter}
-                            editingId={editingId}
-                            editingText={editingText}
-                            onEditingTextChange={onEditingTextChange}
-                            onEditSubmit={onEditSubmit}
-                            onEditCancel={onEditCancel}
+                            onEditEnter={() => { }}
+                            editingId={null}
+                            editingText={""}
+                            onEditingTextChange={() => { }}
+                            onEditSubmit={() => { }}
+                            onEditCancel={() => { }}
                         />
                     ))}
                 </div>

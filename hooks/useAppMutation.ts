@@ -7,7 +7,7 @@ interface MutationParams<TData, TResponse> {
     endpoint: string;
     invalidateTags?: string[] | string[][];
     id?: string;
-    method: 'post' | 'patch' | 'delete';
+    method: 'post' | 'patch' | 'delete' | 'put';
     data?: TData;
     config?: AxiosRequestConfig;
     toastOnError?: boolean;
