@@ -10,6 +10,8 @@ export default function FormPage() {
     const params = useParams();
     const search = useSearchParams()
     const id = params?.id as string;
+    const isCashAvailable = search.get("isCashAvailable");
+    const price = search.get("price");
     const isStyle = search.get("isStyle")
 
     const { data, isLoading, error } = useFetchData<ApiResponse>({
@@ -58,9 +60,10 @@ export default function FormPage() {
             formTitle: designJson.formTitle || designData.formTemplateName || "Untitled Form",
             isStyle: true,
             isPaid: false, // FormDesignData might not have this directly, adjust if needed
-            price: 0,
-            fields: Array.isArray(designJson.fields) ? designJson.fields : []
-        };
+            fields: Array.isArray(designJson.fields) ? designJson.fields : [],
+            isCashAvailable: isCashAvailable === "true",
+            price: price ? parseInt(price) : 0,
+        };  
     } else {
         const templateData = data.data as FormTemplateData;
 
@@ -87,8 +90,9 @@ export default function FormPage() {
                 formTitle: designJson.formTitle || templateData.formName || "Untitled Form",
                 isStyle: true,
                 isPaid: templateData.isPaid,
-                price: templateData.price,
-                fields: Array.isArray(designJson.fields) ? designJson.fields : []
+                fields: Array.isArray(designJson.fields) ? designJson.fields : [],
+                isCashAvailable: isCashAvailable === "true",
+                price: price ? parseInt(price) : 0,
             };
         } else {
             let fields: (string | FormField)[] = [];
@@ -126,8 +130,9 @@ export default function FormPage() {
                 formTitle: templateData.formName || "Untitled Form",
                 isStyle: false,
                 isPaid: templateData.isPaid,
-                price: templateData.price,
-                fields: Array.isArray(fields) ? fields : []
+                fields: Array.isArray(fields) ? fields : [],
+                isCashAvailable: isCashAvailable === "true",
+                price: price ? parseInt(price) : 0,
             };
         }
     }

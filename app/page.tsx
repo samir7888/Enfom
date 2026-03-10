@@ -43,7 +43,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Sheet,
@@ -63,7 +63,7 @@ interface FormCardData {
   formId: string;
   formName: string;
   description: string | null;
-  price: number;
+  price?: number;
   createdAt: string;
   business: {
     businessId: string;
@@ -76,6 +76,7 @@ interface FormCardData {
   responses?: number;
   views?: string;
   isVisible?: boolean;
+  isCashAvailable?: boolean;
   isStyle?: boolean;
 }
 
@@ -391,9 +392,9 @@ function FormCard({ form }: { form: FormCardData }) {
             )}
 
           </div>
-          {form.price > 0 && (
+          {form.isCashAvailable &&  (
             <Badge variant="outline" className="text-emerald-600 border-emerald-100">
-              ${form.price}
+              Rs. {form.price}
             </Badge>
           )}
         </div>
@@ -441,7 +442,7 @@ function FormCard({ form }: { form: FormCardData }) {
             </SheetContent>
           </Sheet>
 
-          <Link href={`/form/${form.formId}?isStyle=${form.isStyle}`}
+          <Link href={`/form/${form.formId}?isStyle=${form.isStyle}` + (form.isCashAvailable ? "&isCashAvailable=true&price=" + form.price : "")}
             className="flex items-center justify-center h-11 bg-gray-100 hover:bg-gray-200 text-gray-700 gap-2 font-bold rounded-xl flex-1 border-none"
           >
             <File size={16} />

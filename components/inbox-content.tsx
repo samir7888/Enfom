@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bookmark, Reply, Send, Mail, ChevronDown, Check, Plus, X, ChevronLeft } from 'lucide-react';
+import { Bookmark, Reply, Send, Mail, ChevronDown, Check, Plus, X, ChevronLeft, UserPlus, Search } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Avatar as UIAvatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { useFetchData } from '@/hooks/useFetchData';
+import { useAppMutation } from '@/hooks/useAppMutation';
+import { toast } from 'sonner';
 
 /* ─────────────────────────── Types ─────────────────────────── */
 type Tab = 'General' | 'Following' | 'Archive';
@@ -22,37 +26,25 @@ interface Notification {
     online: boolean;
 }
 
+interface User {
+    id: string;
+    name: string;
+    username: string;
+    avatar?: string;
+}
+
+interface ConnectionResponse {
+    success: boolean;
+    data: User[];
+}
 /* ─────────────────────── Mock Data ──────────────────────────── */
 const NOTIFICATIONS: Notification[] = [
-    {
-        id: '1',
-        author: 'Joy Pacheco',
-        initials: 'JP',
-        avatarGradient: 'from-violet-500 to-indigo-600',
-        task: 'Improve cards readability',
-        time: '2h ago',
-        team: 'Engineering',
-        message:
-            "I've started working on a first draft, feel free to take a look and tell me what you think.",
-        unread: true,
-        online: true,
-    },
-    {
-        id: '2',
-        author: 'Marcus Reid',
-        initials: 'MR',
-        avatarGradient: 'from-emerald-400 to-teal-600',
-        task: 'Dashboard redesign sprint',
-        time: '5h ago',
-        team: 'Design',
-        message:
-            'Just pushed the updated Figma link. Can you review the nav changes before EOD?',
-        unread: true,
-        online: false,
-    },
+    // ... items
+    { id: '1', author: 'Joy Pacheco', initials: 'JP', avatarGradient: 'from-violet-500 to-indigo-600', task: 'Improve cards readability', time: '2h ago', team: 'Engineering', message: "I've started working on a first draft, feel free to take a look and tell me what you think.", unread: true, online: true },
+    { id: '2', author: 'Marcus Reid', initials: 'MR', avatarGradient: 'from-emerald-400 to-teal-600', task: 'Dashboard redesign sprint', time: '5h ago', team: 'Design', message: 'Just pushed the updated Figma link. Can you review the nav changes before EOD?', unread: true, online: false },
 ];
 
-/* ─────────────────────── Sub-Components ────────────────────── */
+
 
 /** Avatar with optional online indicator */
 function Avatar({
@@ -196,7 +188,7 @@ function NotificationCard({ notification }: { notification: Notification }) {
         <article
             className={cn(
                 "group relative flex items-start gap-3 px-5 py-6 border-b border-slate-100 last:border-b-0 transition-colors duration-150",
-                !read ? 'bg-indigo-50/40 hover:bg-indigo-50/70' : 'hover:bg-slate-50/80'
+                !read ? 'bg-white hover:bg-indigo-50/20' : 'hover:bg-slate-50/80'
             )}
             aria-label={`Notification from ${notification.author}`}
         >
@@ -285,126 +277,211 @@ function NotificationCard({ notification }: { notification: Notification }) {
     );
 }
 
+
+
+
+function UserListItem({ user }: { user: User }) {
+    const { mutate, isPending } = useAppMutation();
+
+    const [isRequested, setIsRequested] = useState(false);
+    const handleFriendRequest = (receiverUserId: string) => {
+        mutate({
+            endpoint: "Connections/request",
+            method: "post",
+            data: { receiverUserId },
+            onSuccess: () => {
+                toast.success("Friend request sent successfully");
+                setIsRequested(true);
+            }
+        })
+    }
+    return (
+        <div
+            className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-100 dark:hover:bg-zinc-900 transition-all duration-200 group"
+        >
+            <div className="flex items-center gap-3">
+                <UIAvatar className="h-12 w-12 border-2 border-white dark:border-zinc-800 shadow-sm">
+                    <AvatarImage src={user?.avatar} className="object-cover" />
+                    <AvatarFallback>{user?.name && user.name[0].toUpperCase() || 'A'}</AvatarFallback>
+                </UIAvatar>
+                <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{user?.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">{user?.username}</p>
+                </div>
+            </div>
+            <Button
+                size="sm"
+                variant={isRequested ? "secondary" : "ghost"}
+                className={cn(
+                    "transition-all font-bold rounded-xl text-[11px]",
+                    !isRequested && "bg-indigo-50 hover:bg-indigo-100 text-indigo-600",
+                    isRequested && "bg-slate-100 text-slate-500 cursor-default"
+                )}
+                onClick={() => {
+                    !isRequested && handleFriendRequest(user.id)
+                }}
+                disabled={isRequested}
+            >
+                {isRequested ? (
+                    <>
+                        <Check className="w-3.5 h-3.5 mr-1.5" />
+                        Requested
+                    </>
+                ) : (
+                    <>
+                        <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+                        Send Friend Request
+                    </>
+                )}
+            </Button>
+        </div>
+    );
+}
+
 export function InboxContent() {
     const [activeTab, setActiveTab] = useState<Tab>('General');
     const tabs: Tab[] = ['General', 'Following', 'Archive'];
     const tabCount: Partial<Record<Tab, number>> = { General: 2 };
     const [isAddClicked, setIsAddClicked] = useState(false);
     const [search, setSearch] = useState('');
-
+    const { data: users, isLoading } = useFetchData<ConnectionResponse>({
+        queryKey: ["connection"],
+        endpoint: "Connections/AllUser"
+    })
     const filteredNotifications =
         activeTab === 'General' ? NOTIFICATIONS : [];
+
+
+
+
+
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-zinc-950 overflow-hidden">
             {/* Header */}
-            <div className="px-6 pt-6 pb-2 border-b border-slate-100 dark:border-zinc-800">
-                <div className="flex items-center justify-between mb-6">
+            <div className="relative px-6 pt-6 pb-2 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-5 justify-start mb-6">
                     {isAddClicked && <Button variant={"outline"} onClick={() => setIsAddClicked(!isAddClicked)} ><ChevronLeft className="w-4 h-4" /> </Button>}
                     <h1 className="text-2xl font-black text-slate-900 dark:text-zinc-100 tracking-tight">
                         Inbox
                     </h1>
-                    <button
 
-                        onClick={() => setIsAddClicked(!isAddClicked)}
-                        className="
+                    {!isAddClicked &&
+
+
+                        <Button variant={'outline'}
+
+                            onClick={() => setIsAddClicked(!isAddClicked)}
+                            className=" absolute bottom-4 right-5 z-100
               flex items-center gap-1.5 text-slate-500
               px-3 py-1.5 rounded-xl
               hover:bg-slate-100 dark:hover:bg-zinc-900 hover:text-slate-700
               transition-colors duration-150
             "
-                        aria-label="Filter inbox view"
-                    >
-                        {!isAddClicked &&  <Plus className="w-4 h-4" />}
-                    </button>
+                            aria-label="Filter inbox view"
+                        >
+                            <Plus className="w-4 h-4" />
+                        </Button>
+                    }
                 </div>
 
                 {/* Tabs */}
-                {!isAddClicked ? <nav
-                    className="flex gap-1"
-                    role="tablist"
-                    aria-label="Inbox tabs"
-                >
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab}
-                            role="tab"
-                            aria-selected={activeTab === tab}
-                            aria-controls={`panel-${tab}`}
-                            id={`tab-${tab}`}
-                            onClick={() => setActiveTab(tab)}
-                            className={cn(
-                                "relative flex items-center gap-2 px-1 py-3 mr-4 text-sm font-bold transition-all duration-200 outline-none rounded-sm",
-                                "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:rounded-full after:transition-all after:duration-300",
-                                activeTab === tab
-                                    ? 'text-indigo-600 after:bg-indigo-600 after:scale-x-100'
-                                    : 'text-slate-400 hover:text-slate-600 after:bg-indigo-600 after:scale-x-0 hover:after:scale-x-50'
-                            )}
+                {!isAddClicked ? (
+
+                    <>
+                        <nav
+                            className="flex gap-1"
+                            role="tablist"
+                            aria-label="Inbox tabs"
                         >
-                            {tab}
-                            {tabCount[tab] && (
-                                <span
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab}
+                                    role="tab"
+                                    aria-selected={activeTab === tab}
+                                    aria-controls={`panel-${tab}`}
+                                    id={`tab-${tab}`}
+                                    onClick={() => setActiveTab(tab)}
                                     className={cn(
-                                        "inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black transition-colors duration-200",
-                                        activeTab === tab ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-zinc-900 text-slate-500'
+                                        "relative flex items-center gap-2 px-1 py-3 mr-4 text-sm font-bold transition-all duration-200 outline-none rounded-sm",
+                                        "after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:rounded-full after:transition-all after:duration-300",
+                                        activeTab === tab
+                                            ? 'text-indigo-600 after:bg-indigo-600 after:scale-x-100'
+                                            : 'text-slate-400 hover:text-slate-600 after:bg-indigo-600 after:scale-x-0 hover:after:scale-x-50'
                                     )}
-                                    aria-label={`${tabCount[tab]} notifications`}
                                 >
-                                    {tabCount[tab]}
-                                </span>
+                                    {tab}
+                                    {tabCount[tab] && (
+                                        <span
+                                            className={cn(
+                                                "inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-black transition-colors duration-200",
+                                                activeTab === tab ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-zinc-900 text-slate-500'
+                                            )}
+                                            aria-label={`${tabCount[tab]} notifications`}
+                                        >
+                                            {tabCount[tab]}
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
+                        </nav>
+
+                        <div
+                            className="flex-1 overflow-y-auto"
+                            id={`panel-${activeTab}`}
+                            role="tabpanel"
+                            aria-labelledby={`tab-${activeTab}`}
+                        >
+                            {filteredNotifications.length > 0 ? (
+                                <div className="divide-y divide-slate-50 dark:divide-zinc-900">
+                                    {filteredNotifications.map((n) => (
+                                        <NotificationCard key={n.id} notification={n} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-[60%] px-8 text-center animate-in fade-in duration-500">
+                                    <div className="w-14 h-14 rounded-3xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center mb-4 text-slate-300 dark:text-zinc-700">
+                                        <Mail className="w-6 h-6" />
+                                    </div>
+                                    <p className="text-base font-bold text-slate-900 dark:text-zinc-100 mb-1.5">All caught up!</p>
+                                    <p className="text-sm text-slate-400 leading-relaxed">No new notifications in your {activeTab} folder.</p>
+                                </div>
                             )}
-                        </button>
-                    ))}
-                </nav> : (
-                    <div className='flex items-center gap-2 justify-center h-full'>
-                        <Input
-                            className="rounded-3xl"
-                            placeholder="Search by name or email"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                        <Button variant={"outline"} >Search</Button>
-                    </div>
-                )}
-            </div>
-
-            {/* List Container */}
-            <div
-                className="flex-1 overflow-y-auto"
-                id={`panel-${activeTab}`}
-                role="tabpanel"
-                aria-labelledby={`tab-${activeTab}`}
-            >
-                {filteredNotifications.length > 0 ? (
-                    <div className="divide-y divide-slate-50 dark:divide-zinc-900">
-                        {filteredNotifications.map((n) => (
-                            <NotificationCard key={n.id} notification={n} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-[60%] px-8 text-center animate-in fade-in duration-500">
-                        <div className="w-14 h-14 rounded-3xl bg-slate-50 dark:bg-zinc-900 flex items-center justify-center mb-4 text-slate-300 dark:text-zinc-700">
-                            <Mail className="w-6 h-6" />
                         </div>
-                        <p className="text-base font-bold text-slate-900 dark:text-zinc-100 mb-1.5">All caught up!</p>
-                        <p className="text-sm text-slate-400 leading-relaxed">No new notifications in your {activeTab} folder.</p>
-                    </div>
-                )}
+                    </>
+
+                )
+
+                    : (
+                        <div className='flex flex-col h-[75vh] -mx-6'>
+                            <div className='relative flex items-center mt-4 px-6 pb-4'>
+                                <Search className="absolute left-10 w-4 h-4 text-slate-400" />
+                                <Input
+                                    className="pl-11 rounded-full bg-white dark:bg-zinc-900 border-indigo-200 dark:border-zinc-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 h-12 text-sm shadow-sm"
+                                    placeholder="Search by name or email"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto px-6 pt-2 pb-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-sm font-black text-slate-800 dark:text-zinc-200 ">Suggested</h3>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global Search</span>
+                                </div>
+                                <div className="space-y-2">
+                                    {users?.data?.map((user) => (
+                                        <UserListItem key={user.id} user={user} />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
             </div>
 
-            {/* Footer */}
-            {filteredNotifications.length > 0 && (
-                <div className="px-6 py-4 border-t border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/50 flex items-center justify-between">
-                    <span className="text-[11.5px] text-slate-400 font-bold uppercase tracking-wider">
-                        {filteredNotifications.filter((n) => n.unread).length > 0
-                            ? `${filteredNotifications.filter((n) => n.unread).length} unread`
-                            : 'All notifications read'}
-                    </span>
-                    <button className="text-[11.5px] font-black text-indigo-600 hover:text-indigo-700 transition-colors uppercase tracking-wider">
-                        Mark all read
-                    </button>
-                </div>
-            )}
+
+
+
         </div>
     );
 }

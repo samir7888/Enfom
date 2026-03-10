@@ -222,7 +222,6 @@ export default function FormCreate() {
   });
 
   const [activeTab, setActiveTab] = useState<"general" | "engine">("general");
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [startTimeDisplay, setStartTimeDisplay] = useState("");
 
@@ -329,20 +328,6 @@ export default function FormCreate() {
     }));
   };
 
-  const handleEnableForm = () => {
-    if (formState.paymentRequired) {
-      setPayment((prev) => ({
-        ...prev,
-        amount: formState.requiredPaymentAmount,
-      }));
-      setShowPaymentModal(true);
-    } else {
-      alert(
-        `✅ Form Enabled Successfully!\n\nForm ID: ${currentForm.id}\nForm Name: ${formState.formName}\n\nYour form is now active and ready to receive submissions!`
-      );
-    }
-  };
-
   const router = useRouter();
   const { mutate, isPending } = useAppMutation();
 
@@ -357,6 +342,8 @@ export default function FormCreate() {
       id: currentForm.id,
       formName: formState.formName,
       description: formState.formDescription,
+      price: formState.requiredPaymentAmount,
+      isCashAvailable: formState.paymentRequired,
       templateFields: JSON.stringify(allFields),
       createdAt: currentForm.createdAt.toISOString(),
       publishedAt: new Date().toISOString(),
@@ -386,6 +373,8 @@ export default function FormCreate() {
       id: currentForm.id,
       formName: formState.formName,
       description: formState.formDescription,
+      price: formState.requiredPaymentAmount,
+      isCashAvailable: formState.paymentRequired,
       templateFields: JSON.stringify(allFields),
       createdAt: currentForm.createdAt.toISOString(),
       publishedAt: new Date().toISOString(),
@@ -418,44 +407,6 @@ export default function FormCreate() {
       value = value.slice(0, 2) + "/" + value.slice(2, 4);
     }
     setPayment((prev) => ({ ...prev, expiryDate: value }));
-  };
-
-  const processPayment = () => {
-    if (
-      !payment.cardholderName ||
-      !payment.cardNumber ||
-      !payment.expiryDate ||
-      !payment.cvv
-    ) {
-      alert("⚠️ Please fill in all payment fields");
-      return;
-    }
-
-    if (payment.cardNumber.replace(/\s/g, "").length < 13) {
-      alert("⚠️ Invalid card number");
-      return;
-    }
-
-    if (payment.cvv.length < 3) {
-      alert("⚠️ Invalid CVV");
-      return;
-    }
-
-    // Simulate payment processing
-    setTimeout(() => {
-      alert(
-        `✅ Payment Successful!\n\n💳 Transaction Details:\nForm ID: ${currentForm.id}\nAmount: $${payment.amount}\nCardholder: ${payment.cardholderName}\n\n🎉 Your form is now live!`
-      );
-      setShowPaymentModal(false);
-      setPayment({
-        amount: formState.requiredPaymentAmount,
-        method: "credit_card",
-        cardholderName: "",
-        cardNumber: "",
-        expiryDate: "",
-        cvv: "",
-      });
-    }, 1500);
   };
 
   useEffect(() => {
@@ -733,12 +684,7 @@ export default function FormCreate() {
                     )}
                   </div>
 
-                  <button
-                    onClick={handleEnableForm}
-                    className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Enable Form
-                  </button>
+                  
                 </div>
               </div>
             )}
@@ -930,176 +876,7 @@ export default function FormCreate() {
         </div>
       </div>
 
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl animate-slideUp">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              💳 Payment Required
-            </h3>
-            <p className="text-sm text-gray-600 mb-6">
-              Complete payment to enable your form
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-5 rounded-lg mb-6">
-              <div>
-                <div className="text-xs text-gray-600 mb-1">Form ID</div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {currentForm.id}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600 mb-1">Form Name</div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {formState.formName}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600 mb-1">
-                  Available Forms
-                </div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {formState.availableForm}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-gray-600 mb-1">Payment Amount</div>
-                <div className="text-sm font-semibold text-emerald-600">
-                  ${payment.amount.toFixed(2)}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  💵 Payment Amount (USD)
-                </label>
-                <input
-                  type="number"
-                  value={payment.amount}
-                  onChange={(e) =>
-                    setPayment((prev) => ({
-                      ...prev,
-                      amount: parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                  step="0.01"
-                  min="0"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  🏦 Payment Method
-                </label>
-                <select
-                  value={payment.method}
-                  onChange={(e) =>
-                    setPayment((prev) => ({ ...prev, method: e.target.value }))
-                  }
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                >
-                  <option value="credit_card">💳 Credit Card</option>
-                  <option value="debit_card">💳 Debit Card</option>
-                  <option value="paypal">🅿️ PayPal</option>
-                  <option value="stripe">⚡ Stripe</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  👤 Cardholder Name
-                </label>
-                <input
-                  type="text"
-                  value={payment.cardholderName}
-                  onChange={(e) =>
-                    setPayment((prev) => ({
-                      ...prev,
-                      cardholderName: e.target.value,
-                    }))
-                  }
-                  placeholder="John Doe"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  💳 Card Number
-                </label>
-                <input
-                  type="text"
-                  value={payment.cardNumber}
-                  onChange={formatCardNumber}
-                  placeholder="1234 5678 9012 3456"
-                  maxLength={19}
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    📅 Expiry Date
-                  </label>
-                  <input
-                    type="text"
-                    value={payment.expiryDate}
-                    onChange={formatExpiry}
-                    placeholder="MM/YY"
-                    maxLength={5}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    🔒 CVV
-                  </label>
-                  <input
-                    type="text"
-                    value={payment.cvv}
-                    onChange={(e) =>
-                      setPayment((prev) => ({
-                        ...prev,
-                        cvv: e.target.value.replace(/\D/g, ""),
-                      }))
-                    }
-                    placeholder="123"
-                    maxLength={3}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-0 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-lg">
-                <span className="text-emerald-600 text-lg">🔒</span>
-                <span className="text-xs text-emerald-700">
-                  Your payment information is secure and encrypted
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-8">
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={processPayment}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
-              >
-                Complete Payment
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+     
       <style jsx>{`
         @keyframes fadeIn {
           from {

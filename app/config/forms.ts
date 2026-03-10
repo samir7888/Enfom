@@ -70,6 +70,7 @@ export interface FormConfig {
     price?: number;
     templateFields?: (string | FormField)[]; // Adding this for compatibility if needed
     fields?: (string | FormField)[];
+    isCashAvailable?: boolean;
 }
 
 export interface FormState {
